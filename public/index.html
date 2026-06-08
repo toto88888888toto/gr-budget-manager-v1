@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GR Budget Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css?v=20260427">
+</head>
+<body>
+
+  <!-- ── TOPBAR ───────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <div class="brand-logo-wrap">
+          <img src="/images/Logo.png" alt="Logo" class="brand-logo" />
+        </div>
+        <div>
+          <h1>GR Budget Manager</h1>
+          <p class="brand-sub">Glori Creativity Sole Co., Ltd</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn" id="downloadExcelBtn" type="button">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M4 6l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download Excel
+        </button>
+        <button class="btn btn-ghost" id="refreshBtn" type="button">Refresh</button>
+        <button class="btn btn-ghost theme-toggle" id="themeToggleBtn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+          <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="btn btn-ghost" id="logoutBtn" type="button">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="container">
+
+      <!-- ── SUMMARY BAR ───────────────────────────── -->
+      <div class="summary-bar">
+        <div class="summary-item">
+          <span class="summary-label">Total Projects</span>
+          <span class="summary-value" id="kpiProjects">0</span>
+        </div>
+        <div class="summary-item s-income">
+          <span class="summary-label">
+            <span class="summary-dot"></span>Total Income
+          </span>
+          <span class="summary-value" id="kpiIncome">0</span>
+        </div>
+        <div class="summary-item s-investment">
+          <span class="summary-label">
+            <span class="summary-dot"></span>Total Investment
+          </span>
+          <span class="summary-value" id="kpiInvestment">0</span>
+        </div>
+        <div class="summary-item s-expense">
+          <span class="summary-label">
+            <span class="summary-dot"></span>Total Expense
+          </span>
+          <span class="summary-value" id="kpiExpense">0</span>
+        </div>
+        <div class="summary-item s-profit">
+          <span class="summary-label">
+            <span class="summary-dot"></span>Total Profit
+            <span class="profit-badge">NET</span>
+          </span>
+          <span class="summary-value" id="kpiProfit">0</span>
+        </div>
+
+        <div class="summary-item s-contract">
+          <span class="summary-label">
+            <span class="summary-dot"></span>Remaining to Collect
+            <span class="contract-badge">LEFT</span>
+          </span>
+          <span class="summary-value" id="kpiContractValue">0</span>
+          <span class="summary-sub" id="kpiContractSub"></span>
+        </div>
+      </div>
+
+      <!-- ── PROJECTS PANEL ───────────────────────── -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Projects</div>
+            <div class="panel-sub">Click any card to view details and add transactions</div>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <!-- Filters -->
+          <div class="filter-row">
+            <div class="field">
+              <label for="searchInput">Search</label>
+              <input id="searchInput" type="text" placeholder="Search by code, name, category, owner…" />
+            </div>
+            <div class="field">
+              <label for="filterCategory">Category</label>
+              <input id="filterCategory" type="text" list="filterCategoryList" placeholder="All categories" />
+            </div>
+            <div class="field">
+              <label for="filterOwner">Owner</label>
+              <input id="filterOwner" type="text" list="filterOwnerList" placeholder="All owners" />
+            </div>
+            <div class="field">
+              <label for="sortBy">Sort by</label>
+              <select id="sortBy">
+                <option value="latest">Latest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name">Project Name</option>
+                <option value="code">Project Code</option>
+                <option value="profitHigh">Profit ↓ High to Low</option>
+                <option value="profitLow">Profit ↑ Low to High</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Cards -->
+          <div id="projectList" class="cards-grid"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── PROJECT DETAIL MODAL ─────────────────────────── -->
+  <div id="projectModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" id="projectModalBackdrop"></div>
+    <div class="modal-dialog modal-lg" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
+      <div class="modal-header">
+        <div>
+          <h3 id="projectModalTitle">Project Detail</h3>
+          <p id="projectModalSub">Project summary and transaction history.</p>
+        </div>
+        <button type="button" class="modal-close" id="closeProjectModal" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="project-detail-wrap">
+
+          <div class="project-detail-top">
+            <div class="project-detail-main">
+              <div class="project-detail-logo" id="projectDetailLogoWrap">
+                <div class="logo-preview small" id="projectDetailLogo">No logo</div>
+              </div>
+              <div class="project-detail-info">
+                <div class="project-badges">
+                  <span class="badge" id="detailProjectCode">GB-00000</span>
+                  <span class="badge soft" id="detailProjectCategory">Category</span>
+                  <span class="badge soft" id="detailProjectOwner">Owner</span>
+                </div>
+                <h2 id="detailProjectName">Project Name</h2>
+                <p class="muted" id="detailProjectRemark" style="font-size:13px;"></p>
+                <div class="detail-meta-grid">
+                  <div class="meta-item">
+                    <span class="meta-label">Start Date</span>
+                    <strong id="detailStartDate">—</strong>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">End Date</span>
+                    <strong id="detailEndDate">—</strong>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">Currency</span>
+                    <strong id="detailCurrency">LAK</strong>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">Transactions</span>
+                    <strong id="detailTransactionCount">0</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="project-detail-actions">
+              <button class="btn btn-sm" type="button" id="editProjectBtn">Edit</button>
+              <button class="btn btn-sm btn-primary" type="button" id="openAddTxFromDetailBtn">+ Add Transaction</button>
+              <button class="btn btn-sm btn-danger" type="button" id="deleteProjectBtn">Delete</button>
+            </div>
+          </div>
+
+          <div class="project-finance-grid">
+            <div class="finance-box">
+              <span class="meta-label">Total Price</span>
+              <strong id="detailTotalPrice">0</strong>
+            </div>
+            <div class="finance-box">
+              <span class="meta-label">VAT %</span>
+              <strong id="detailVatPercent">0%</strong>
+            </div>
+            <div class="finance-box">
+              <span class="meta-label">Total + VAT</span>
+              <strong id="detailTotalWithVat">0</strong>
+            </div>
+            <div class="finance-box">
+              <span class="meta-label">Actual Cost</span>
+              <strong id="detailActualCost">0</strong>
+            </div>
+            <div class="finance-box highlight">
+              <span class="meta-label">Est. Profit</span>
+              <strong id="detailEstimatedProfit">0</strong>
+            </div>
+            <div class="finance-box">
+              <span class="meta-label">Balance</span>
+              <strong id="detailBalance">0</strong>
+            </div>
+          </div>
+
+          <div class="project-finance-grid small-kpis">
+            <div class="finance-box income">
+              <span class="meta-label">Income</span>
+              <strong id="detailIncome">0</strong>
+            </div>
+            <div class="finance-box investment">
+              <span class="meta-label">Investment</span>
+              <strong id="detailInvestment">0</strong>
+            </div>
+            <div class="finance-box expense">
+              <span class="meta-label">Expense</span>
+              <strong id="detailExpense">0</strong>
+            </div>
+          </div>
+
+          <div class="modal-history-wrap">
+            <div class="section-head modal-history-head">
+              <h3>Transaction History</h3>
+              <p id="detailHistoryCount">0 item(s)</p>
+            </div>
+            <div id="projectModalHistory" class="history-list">
+              <div class="empty-state small">
+                <h3>No transactions yet</h3>
+                <p>Add the first transaction for this project.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TRANSACTION MODAL ─────────────────────────── -->
+  <div id="txModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" id="txModalBackdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="txModalTitle">
+      <div class="modal-header">
+        <div>
+          <h3 id="txModalTitle">Add Transaction</h3>
+          <p>Select income / investment / expense for this project.</p>
+        </div>
+        <button type="button" class="modal-close" id="closeTxModal" aria-label="Close">✕</button>
+      </div>
+
+      <form id="transactionForm" enctype="multipart/form-data">
+        <input type="hidden" id="selectedProjectId" name="projectId" />
+
+        <div class="field full" style="margin-bottom:14px;">
+          <label for="selectedProjectText">Selected Project</label>
+          <input id="selectedProjectText" type="text" readonly placeholder="Select a project first" />
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="txType">Type</label>
+            <select id="txType" name="type" required>
+              <option value="income">Income</option>
+              <option value="investment">Investment</option>
+              <option value="expense">Expense</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="txCategory">Category</label>
+            <input id="txCategory" name="category" type="text" list="txCategoryList" placeholder="Type or choose" required />
+          </div>
+          <div class="field full">
+            <label for="txDescription">Description</label>
+            <textarea id="txDescription" name="description" placeholder="Bill / receipt / payment detail"></textarea>
+          </div>
+          <div class="field">
+            <label for="txCurrency">Currency</label>
+            <select id="txCurrency" name="currency" required>
+              <option value="LAK">LAK</option>
+              <option value="THB">THB</option>
+              <option value="USD">USD</option>
+              <option value="CNY">CNY</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="txAmount">Amount</label>
+            <input id="txAmount" type="text" inputmode="decimal" placeholder="0" required />
+            <input type="hidden" name="amount" id="txAmountRaw" />
+          </div>
+          <div class="field">
+            <label for="txDate">Date</label>
+            <input id="txDate" name="date" type="date" required />
+          </div>
+          <div class="field">
+            <label for="billFile">Attach Bill</label>
+            <input id="billFile" name="billFile" type="file" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" id="addTxBtn" type="submit">Save Transaction</button>
+          <button class="btn" id="clearTxBtn" type="button">Clear</button>
+        </div>
+
+        <div class="modal-history-wrap">
+          <div class="section-head modal-history-head">
+            <h3>Transaction History</h3>
+            <p id="txHistoryCount">0 item(s)</p>
+          </div>
+          <div id="txModalHistory" class="history-list">
+            <div class="empty-state small">
+              <h3>No transactions yet</h3>
+              <p>Add the first transaction for this project.</p>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Datalists -->
+  <datalist id="projectCategoryList"><option value="Administrative expenses"></option></datalist>
+  <datalist id="txCategoryList"><option value="Administrative expenses"></option></datalist>
+  <datalist id="filterCategoryList"><option value="Administrative expenses"></option></datalist>
+  <datalist id="filterOwnerList"></datalist>
+
+  <!-- ── FAB ──────────────────────────────────────── -->
+  <button class="fab-add-project" id="fabAddProject" title="New Project" aria-label="Add New Project">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span>New Project</span>
+  </button>
+
+  <!-- ── PROJECT FORM DRAWER ──────────────────────── -->
+  <div id="projectFormDrawer" class="drawer hidden" aria-hidden="true">
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <div class="drawer-header">
+        <div>
+          <h3 id="drawerTitle">New Project</h3>
+          <p>Fill in the details below to create a project.</p>
+        </div>
+        <button type="button" class="modal-close" id="closeDrawer" aria-label="Close">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        <form id="projectForm" enctype="multipart/form-data">
+          <input type="hidden" id="editId" name="editId" />
+          <input type="hidden" id="keepLogoPath" name="keepLogoPath" />
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="projectNo">No.</label>
+              <input id="projectNo" name="projectNo" type="text" readonly />
+            </div>
+            <div class="field">
+              <label for="projectCode">Project Code</label>
+              <input id="projectCode" name="projectCode" type="text" readonly />
+            </div>
+            <div class="field full">
+              <label for="projectName">Project Name <span style="color:var(--expense)">*</span></label>
+              <input id="projectName" name="projectName" type="text" placeholder="Enter project name" required />
+            </div>
+            <div class="field">
+              <label for="category">Category <span style="color:var(--expense)">*</span></label>
+              <input id="category" name="category" type="text" list="projectCategoryList" placeholder="Type or choose" required />
+            </div>
+            <div class="field">
+              <label for="owner">Owner</label>
+              <input id="owner" name="owner" type="text" list="filterOwnerList" placeholder="Person in charge" />
+            </div>
+            <div class="field">
+              <label for="startDate">Start Date</label>
+              <input id="startDate" name="startDate" type="date" />
+            </div>
+            <div class="field">
+              <label for="endDate">End Date</label>
+              <input id="endDate" name="endDate" type="date" />
+            </div>
+            <div class="field">
+              <label for="contractCurrency">Currency</label>
+              <select id="contractCurrency" name="contractCurrency">
+                <option value="LAK">LAK</option>
+                <option value="THB">THB</option>
+                <option value="USD">USD</option>
+                <option value="CNY">CNY</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="totalPrice">Total Price</label>
+              <input id="totalPrice" type="text" inputmode="decimal" placeholder="0" />
+              <input type="hidden" id="totalPriceRaw" name="totalPrice" />
+            </div>
+            <div class="field">
+              <label for="vatPercent">VAT %</label>
+              <input id="vatPercent" name="vatPercent" type="number" min="0" step="0.01" value="10" />
+            </div>
+
+            <!-- Expected Revenue Summary -->
+            <div class="field full">
+              <div class="contract-summary">
+                <div class="contract-summary-label">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Expected Contract Value (incl. VAT)
+                </div>
+                <div class="contract-summary-value">
+                  <input id="totalPriceWithVatDisplay" type="text" readonly placeholder="Enter price above…" />
+                </div>
+              </div>
+            </div>
+            <div class="field full">
+              <label for="remark">Remark</label>
+              <textarea id="remark" name="remark" placeholder="Optional notes…"></textarea>
+            </div>
+            <div class="field full">
+              <label for="companyLogo">Logo</label>
+              <input id="companyLogo" name="companyLogo" type="file" accept="image/*" />
+            </div>
+            <div class="field full">
+              <label>Preview</label>
+              <div class="logo-preview" id="logoPreview" style="min-height:64px;">No logo selected</div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" id="saveBtn" type="submit">Save Project</button>
+            <button class="btn" id="resetBtn" type="button">Clear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── DARK MODE TOGGLE ──────────────────────────────
+    const themeBtn = document.getElementById('themeToggleBtn');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const saved = localStorage.getItem('theme');
+
+    function applyTheme(dark) {
+      document.body.classList.toggle('dark', dark);
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+
+    // Apply on load
+    applyTheme(saved === 'dark' || (!saved && prefersDark));
+
+    themeBtn?.addEventListener('click', () => {
+      applyTheme(!document.body.classList.contains('dark'));
+    });
+  </script>
+
+  <script>
+    // Watch profit KPI and toggle green/red on the card
+    const profitObserver = new MutationObserver(() => {
+      const val = document.getElementById('kpiProfit');
+      const card = document.querySelector('.summary-item.s-profit');
+      if (!val || !card) return;
+      const num = parseFloat(String(val.textContent).replace(/,/g, ''));
+      card.classList.toggle('profit-negative', num < 0);
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+      const el = document.getElementById('kpiProfit');
+      if (el) profitObserver.observe(el, { childList: true, characterData: true, subtree: true });
+    });
+  </script>
+
+  <script>
+    const fab = document.getElementById('fabAddProject');
+    const drawer = document.getElementById('projectFormDrawer');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const closeDrawerBtn = document.getElementById('closeDrawer');
+
+    function openDrawer() {
+      drawer.classList.remove('hidden');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('modal-open');
+    }
+    function closeDrawerFn() {
+      drawer.classList.add('hidden');
+      drawer.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('modal-open');
+    }
+
+    fab.addEventListener('click', openDrawer);
+    closeDrawerBtn.addEventListener('click', closeDrawerFn);
+    drawerBackdrop.addEventListener('click', closeDrawerFn);
+    window.openProjectDrawer = openDrawer;
+    window.closeProjectDrawer = closeDrawerFn;
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !drawer.classList.contains('hidden')) closeDrawerFn();
+    });
+  </script>
+
+  <script src="/script.js?v=20260427"></script>
+
+  <script>
+    // Patch updateKPIs to also update Contract Value (total price + VAT across all projects)
+    const _origUpdateKPIs = window.updateKPIs;
+    if (typeof updateKPIs === 'function') {
+      window.updateKPIs = function(projects) {
+        _origUpdateKPIs(projects);
+        updateContractKPI(projects);
+      };
+    }
+
+    function updateContractKPI(projects) {
+      const el = document.getElementById('kpiContractValue');
+      const subEl = document.getElementById('kpiContractSub');
+      const card = el ? el.closest('.summary-item') : null;
+      if (!el || !Array.isArray(projects)) return;
+
+      const fmt = (n) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n);
+
+      let totalContract = 0;
+      let totalIncome = 0;
+
+      projects.forEach(p => {
+        const price = parseFloat(String(p.totalPrice || 0).replace(/,/g, '')) || 0;
+        const vat = parseFloat(String(p.vatPercent || 0).replace(/,/g, '')) || 0;
+        totalContract += price + (price * vat / 100);
+
+        const txs = Array.isArray(p.transactions) ? p.transactions : [];
+        txs.forEach(tx => {
+          if (tx.type === 'income') {
+            totalIncome += parseFloat(String(tx.amount || 0).replace(/,/g, '')) || 0;
+          }
+        });
+      });
+
+      // Also read from the KPI if transactions not embedded
+      if (totalIncome === 0) {
+        const incomeEl = document.getElementById('kpiIncome');
+        if (incomeEl) totalIncome = parseFloat(String(incomeEl.textContent).replace(/,/g, '')) || 0;
+      }
+
+      const remaining = totalContract - totalIncome;
+      el.textContent = fmt(Math.abs(remaining));
+
+      if (subEl) {
+        subEl.textContent = `Contract: ${fmt(totalContract)} − Received: ${fmt(totalIncome)}`;
+      }
+
+      // Color: green if still owed money, red if over-collected
+      if (card) {
+        card.classList.toggle('contract-overcollected', remaining < 0);
+      }
+    }
+
+    // Also hook via MutationObserver on kpiProjects as a fallback trigger
+    const contractObs = new MutationObserver(() => {
+      if (typeof allProjects !== 'undefined') updateContractKPI(allProjects);
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+      const el = document.getElementById('kpiProjects');
+      if (el) contractObs.observe(el, { childList: true, characterData: true, subtree: true });
+    });
+  </script>
+</body>
+</html>

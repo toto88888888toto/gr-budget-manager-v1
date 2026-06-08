@@ -1,0 +1,570 @@
+const express = require('express');
+const ExcelJS = require('exceljs');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+const ROOT_DIR = __dirname;
+const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
+const DATA_DIR = path.join(ROOT_DIR, 'data');
+const UPLOAD_DIR = path.join(ROOT_DIR, 'uploads');
+const EXCEL_FILE = path.join(DATA_DIR, 'budget.xlsx');
+const PROJECT_SHEET = 'Projects';
+const TRANSACTION_SHEET = 'Transactions';
+
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(UPLOAD_DIR));
+app.use(express.static(PUBLIC_DIR));
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '');
+    const base = path
+      .basename(file.originalname || 'file', ext)
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 80);
+    cb(null, `${Date.now()}-${base}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024, files: 20 }
+});
+
+const projectUpload = upload.fields([
+  { name: 'companyLogo', maxCount: 1 },
+  { name: 'projectFiles', maxCount: 10 }
+]);
+
+const transactionUpload = upload.fields([
+  { name: 'txFiles', maxCount: 10 }
+]);
+
+const PROJECT_HEADERS = [
+  'id',
+  'projectCode',
+  'projectName',
+  'department',
+  'budgetCategory',
+  'owner',
+  'budgetAmount',
+  'status',
+  'priority',
+  'startDate',
+  'endDate',
+  'remark',
+  'companyLogo',
+  'projectFiles',
+  'createdAt',
+  'updatedAt'
+];
+
+const TRANSACTION_HEADERS = [
+  'id',
+  'projectId',
+  'type',
+  'amount',
+  'date',
+  'vendor',
+  'referenceNo',
+  'note',
+  'files',
+  'createdAt',
+  'updatedAt'
+];
+
+function toNumber(value) {
+  return Number(String(value || '').replace(/,/g, '').trim()) || 0;
+}
+
+function normalizeDate(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value.slice(0, 10);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  return String(value).slice(0, 10);
+}
+
+function safeJsonParse(value, fallback) {
+  try {
+    if (!value) return fallback;
+    return JSON.parse(String(value));
+  } catch {
+    return fallback;
+  }
+}
+
+function publicPathFromFile(file) {
+  return file ? `/uploads/${file.filename}` : '';
+}
+
+function uploadedPaths(files = []) {
+  return files.map((file) => `/uploads/${file.filename}`);
+}
+
+function removePublicFile(filePath) {
+  try {
+    if (!filePath || typeof filePath !== 'string' || !filePath.startsWith('/uploads/')) return;
+    const filename = filePath.replace('/uploads/', '');
+    const fullPath = path.join(UPLOAD_DIR, filename);
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+  } catch (error) {
+    console.error('Failed deleting file', filePath, error.message);
+  }
+}
+
+function deleteRemovedFiles(oldList, newList) {
+  const keep = new Set(newList || []);
+  (oldList || []).forEach((filePath) => {
+    if (!keep.has(filePath)) removePublicFile(filePath);
+  });
+}
+
+async function openWorkbook() {
+  const workbook = new ExcelJS.Workbook();
+
+  if (fs.existsSync(EXCEL_FILE)) {
+    await workbook.xlsx.readFile(EXCEL_FILE);
+  }
+
+  let projectSheet = workbook.getWorksheet(PROJECT_SHEET);
+  let transactionSheet = workbook.getWorksheet(TRANSACTION_SHEET);
+
+  if (!projectSheet) projectSheet = workbook.addWorksheet(PROJECT_SHEET);
+  if (!transactionSheet) transactionSheet = workbook.addWorksheet(TRANSACTION_SHEET);
+
+  ensureHeaders(projectSheet, PROJECT_HEADERS);
+  ensureHeaders(transactionSheet, TRANSACTION_HEADERS);
+
+  styleSheet(projectSheet, PROJECT_HEADERS.length);
+  styleSheet(transactionSheet, TRANSACTION_HEADERS.length);
+
+  return { workbook, projectSheet, transactionSheet };
+}
+
+function ensureHeaders(sheet, headers) {
+  const headerRow = sheet.getRow(1);
+  const current = headerRow.values.slice(1).map((value) => String(value || '').trim());
+  const matches = JSON.stringify(current) === JSON.stringify(headers);
+
+  if (sheet.rowCount === 0) {
+    sheet.addRow(headers);
+  } else if (!matches) {
+    sheet.spliceRows(1, 1);
+    sheet.insertRow(1, headers);
+  }
+}
+
+function styleSheet(sheet, count) {
+  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+  sheet.columns = Array.from({ length: count }, () => ({ width: 22 }));
+
+  const row = sheet.getRow(1);
+  row.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  row.alignment = { vertical: 'middle', horizontal: 'center' };
+  row.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2563EB' }
+  };
+  row.height = 22;
+}
+
+function rowToProject(row) {
+  const values = row.values;
+  return {
+    id: String(values[1] || ''),
+    projectCode: String(values[2] || ''),
+    projectName: String(values[3] || ''),
+    department: String(values[4] || ''),
+    budgetCategory: String(values[5] || ''),
+    owner: String(values[6] || ''),
+    budgetAmount: toNumber(values[7]),
+    status: String(values[8] || 'Planned'),
+    priority: String(values[9] || 'Medium'),
+    startDate: normalizeDate(values[10]),
+    endDate: normalizeDate(values[11]),
+    remark: String(values[12] || ''),
+    companyLogo: String(values[13] || ''),
+    projectFiles: safeJsonParse(values[14], []),
+    createdAt: String(values[15] || ''),
+    updatedAt: String(values[16] || ''),
+    _rowNumber: row.number
+  };
+}
+
+function rowToTransaction(row) {
+  const values = row.values;
+  return {
+    id: String(values[1] || ''),
+    projectId: String(values[2] || ''),
+    type: String(values[3] || 'bill'),
+    amount: toNumber(values[4]),
+    date: normalizeDate(values[5]),
+    vendor: String(values[6] || ''),
+    referenceNo: String(values[7] || ''),
+    note: String(values[8] || ''),
+    files: safeJsonParse(values[9], []),
+    createdAt: String(values[10] || ''),
+    updatedAt: String(values[11] || ''),
+    _rowNumber: row.number
+  };
+}
+
+function projectToRow(project) {
+  return [
+    project.id,
+    project.projectCode,
+    project.projectName,
+    project.department,
+    project.budgetCategory,
+    project.owner,
+    toNumber(project.budgetAmount),
+    project.status,
+    project.priority,
+    project.startDate,
+    project.endDate,
+    project.remark,
+    project.companyLogo || '',
+    JSON.stringify(project.projectFiles || []),
+    project.createdAt,
+    project.updatedAt
+  ];
+}
+
+function transactionToRow(tx) {
+  return [
+    tx.id,
+    tx.projectId,
+    tx.type,
+    toNumber(tx.amount),
+    tx.date,
+    tx.vendor,
+    tx.referenceNo,
+    tx.note,
+    JSON.stringify(tx.files || []),
+    tx.createdAt,
+    tx.updatedAt
+  ];
+}
+
+async function getAllData() {
+  const { projectSheet, transactionSheet } = await openWorkbook();
+  const projects = [];
+  const transactions = [];
+
+  projectSheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+    if (!row.getCell(1).value && !row.getCell(2).value) return;
+    projects.push(rowToProject(row));
+  });
+
+  transactionSheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+    if (!row.getCell(1).value && !row.getCell(2).value) return;
+    transactions.push(rowToTransaction(row));
+  });
+
+  return { projects, transactions };
+}
+
+function buildProjectSummary(project, transactions) {
+  const related = transactions
+    .filter((tx) => tx.projectId === project.id)
+    .sort((a, b) => {
+      const aTime = new Date(a.date || a.createdAt || 0).getTime();
+      const bTime = new Date(b.date || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+
+  const totals = related.reduce(
+    (sum, tx) => {
+      const amount = toNumber(tx.amount);
+      if (tx.type === 'bill') sum.bills += amount;
+      if (tx.type === 'receipt') sum.receipts += amount;
+      if (tx.type === 'payment') sum.payments += amount;
+      return sum;
+    },
+    { bills: 0, receipts: 0, payments: 0 }
+  );
+
+  const spentAmount = totals.bills + totals.payments;
+  const balanceAmount = toNumber(project.budgetAmount) - spentAmount;
+  const receiptBalance = totals.receipts - spentAmount;
+
+  return {
+    ...project,
+    transactions: related.map(({ _rowNumber, ...tx }) => tx),
+    totals,
+    spentAmount,
+    balanceAmount,
+    receiptBalance,
+    transactionCount: related.length
+  };
+}
+
+function nextProjectCode(projects) {
+  const max = projects.reduce((current, item) => {
+    const match = String(item.projectCode || '').match(/GB-(\d+)/i);
+    const num = match ? Number(match[1]) : 0;
+    return num > current ? num : current;
+  }, 0);
+
+  return `GB-${String(max + 1).padStart(4, '0')}`;
+}
+
+function validateProject(project) {
+  if (!project.projectName) return 'Project name is required';
+  if (!project.department) return 'Department is required';
+  if (!project.budgetCategory) return 'Budget category is required';
+  if (toNumber(project.budgetAmount) < 0) return 'Budget amount must be 0 or more';
+  return '';
+}
+
+function validateTransaction(tx) {
+  if (!tx.projectId) return 'Project is required';
+  if (!tx.type) return 'Transaction type is required';
+  if (!['bill', 'receipt', 'payment'].includes(tx.type)) return 'Transaction type is invalid';
+  if (toNumber(tx.amount) <= 0) return 'Amount must be greater than 0';
+  if (!tx.date) return 'Date is required';
+  return '';
+}
+
+function projectPayload(body, existing, req, projects) {
+  const keepFiles = safeJsonParse(body.keepProjectFiles, existing?.projectFiles || []);
+  const newProjectFiles = uploadedPaths(req.files?.projectFiles || []);
+  const mergedFiles = [...keepFiles, ...newProjectFiles];
+  const uploadedLogo = publicPathFromFile(req.files?.companyLogo?.[0]);
+
+  return {
+    id: existing?.id || uuidv4(),
+    projectCode: existing?.projectCode || nextProjectCode(projects),
+    projectName: String(body.projectName || existing?.projectName || '').trim(),
+    department: String(body.department || existing?.department || '').trim(),
+    budgetCategory: String(body.budgetCategory || existing?.budgetCategory || '').trim(),
+    owner: String(body.owner || existing?.owner || '').trim(),
+    budgetAmount: toNumber(body.budgetAmount ?? existing?.budgetAmount),
+    status: String(body.status || existing?.status || 'Planned').trim() || 'Planned',
+    priority: String(body.priority || existing?.priority || 'Medium').trim() || 'Medium',
+    startDate: normalizeDate(body.startDate || existing?.startDate),
+    endDate: normalizeDate(body.endDate || existing?.endDate),
+    remark: String(body.remark || existing?.remark || '').trim(),
+    companyLogo: uploadedLogo || String(body.keepCompanyLogo || existing?.companyLogo || ''),
+    projectFiles: mergedFiles,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function transactionPayload(projectId, body, req) {
+  const keepFiles = safeJsonParse(body.keepTxFiles, []);
+  const newFiles = uploadedPaths(req.files?.txFiles || []);
+
+  return {
+    id: uuidv4(),
+    projectId,
+    type: String(body.type || '').trim().toLowerCase(),
+    amount: toNumber(body.amount),
+    date: normalizeDate(body.date),
+    vendor: String(body.vendor || '').trim(),
+    referenceNo: String(body.referenceNo || '').trim(),
+    note: String(body.note || '').trim(),
+    files: [...keepFiles, ...newFiles],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function sendError(res, message, status = 500) {
+  return res.status(status).json({ error: message });
+}
+
+app.get('/api/projects', async (req, res) => {
+  try {
+    const { projects, transactions } = await getAllData();
+
+    const items = projects
+      .map((project) => buildProjectSummary(project, transactions))
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+    res.json(items);
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Cannot read projects');
+  }
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+  try {
+    const { projects, transactions } = await getAllData();
+    const project = projects.find((item) => item.id === req.params.id);
+
+    if (!project) return sendError(res, 'Project not found', 404);
+
+    res.json(buildProjectSummary(project, transactions));
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Cannot read project');
+  }
+});
+
+app.get('/api/next-project-code', async (req, res) => {
+  try {
+    const { projects } = await getAllData();
+    res.json({ projectCode: nextProjectCode(projects) });
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Cannot generate project code');
+  }
+});
+
+app.post('/api/projects', projectUpload, async (req, res) => {
+  try {
+    const { workbook, projectSheet } = await openWorkbook();
+    const { projects, transactions } = await getAllData();
+
+    const project = projectPayload(req.body, null, req, projects);
+    const validation = validateProject(project);
+
+    if (validation) return sendError(res, validation, 400);
+
+    projectSheet.addRow(projectToRow(project));
+    await workbook.xlsx.writeFile(EXCEL_FILE);
+
+    res.json({ ok: true, project: buildProjectSummary(project, transactions) });
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Cannot save project');
+  }
+});
+
+app.put('/api/projects/:id', projectUpload, async (req, res) => {
+  try {
+    const { workbook, projectSheet } = await openWorkbook();
+    const { projects, transactions } = await getAllData();
+    const existing = projects.find((item) => item.id === req.params.id);
+
+    if (!existing) return sendError(res, 'Project not found', 404);
+
+    const updated = projectPayload(req.body, existing, req, projects);
+    const validation = validateProject(updated);
+
+    if (validation) return sendError(res, validation, 400);
+
+    if (req.files?.companyLogo?.[0] && existing.companyLogo && existing.companyLogo !== updated.companyLogo) {
+      removePublicFile(existing.companyLogo);
+    }
+
+    deleteRemovedFiles(existing.projectFiles, updated.projectFiles);
+
+    const row = projectSheet.getRow(existing._rowNumber);
+    row.values = [null, ...projectToRow(updated)];
+    row.commit();
+
+    await workbook.xlsx.writeFile(EXCEL_FILE);
+
+    res.json({ ok: true, project: buildProjectSummary(updated, transactions) });
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Cannot update project');
+  }
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+  try {
+    const { workbook, projectSheet, transactionSheet } = await openWorkbook();
+    const { projects, transactions } = await getAllData();
+    const existing = projects.find((item) => item.id === req.params.id);
+
+    if (!existing) return sendError(res, 'Project not found', 404);
+
+    if (existing.companyLogo) removePublicFile(existing.companyLogo);
+    (existing.projectFiles || []).forEach(removePublicFile);
+
+    const related = transactions.filter((tx) => tx.projectId === existing.id);
+    related.forEach((tx) => (tx.files || []).forEach(removePublicFile));
+
+    const txRows = related.map((tx) => tx._rowNumber).sort((a, b) => b - a);
+    txRows.forEach((rowNumber) => transactionSheet.spliceRows(rowNumber, 1));
+
+    projectSheet.spliceRows(existing._rowNumber, 1);
+
+    await workbook.xlsx.writeFile(EXCEL_FILE);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Cannot delete project');
+  }
+});
+
+app.post('/api/projects/:id/transactions', transactionUpload, async (req, res) => {
+  try {
+    const { workbook, transactionSheet } = await openWorkbook();
+    const { projects, transactions } = await getAllData();
+    const project = projects.find((item) => item.id === req.params.id);
+
+    if (!project) return sendError(res, 'Project not found', 404);
+
+    const tx = transactionPayload(project.id, req.body, req);
+    const validation = validateTransaction(tx);
+
+    if (validation) return sendError(res, validation, 400);
+
+    transactionSheet.addRow(transactionToRow(tx));
+    await workbook.xlsx.writeFile(EXCEL_FILE);
+
+    const freshSummary = buildProjectSummary(project, [...transactions, tx]);
+    res.json({ ok: true, transaction: tx, project: freshSummary });
+  } catch (error) {
+    console.error('SAVE TRANSACTION ERROR:', error);
+    sendError(res, error.message || 'Cannot save transaction');
+  }
+});
+
+app.delete('/api/transactions/:id', async (req, res) => {
+  try {
+    const { workbook, transactionSheet } = await openWorkbook();
+    const { transactions } = await getAllData();
+    const tx = transactions.find((item) => item.id === req.params.id);
+
+    if (!tx) return sendError(res, 'Transaction not found', 404);
+
+    (tx.files || []).forEach(removePublicFile);
+    transactionSheet.spliceRows(tx._rowNumber, 1);
+
+    await workbook.xlsx.writeFile(EXCEL_FILE);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Cannot delete transaction');
+  }
+});
+
+app.get('/api/download-excel', async (req, res) => {
+  try {
+    await openWorkbook();
+    res.download(EXCEL_FILE, 'glori-budget.xlsx');
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Cannot download Excel');
+  }
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`Glori Budget Manager running on http://localhost:${PORT}`);
+});
