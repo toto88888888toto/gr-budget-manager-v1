@@ -34,18 +34,17 @@ let drive = null;
 
 function initGoogleDrive() {
   try {
-    const raw = process.env.GOOGLE_SERVICE_ACCOUNT;
-    if (!raw || !DRIVE_FOLDER_ID) {
-      console.log('[Drive] GOOGLE_SERVICE_ACCOUNT or DRIVE_FOLDER_ID not set — skipping Drive sync');
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+    if (!clientId || !clientSecret || !refreshToken || !DRIVE_FOLDER_ID) {
+      console.log('[Drive] OAuth credentials or DRIVE_FOLDER_ID not set — skipping Drive sync');
       return;
     }
-    const credentials = JSON.parse(raw);
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/drive']
-    });
-    drive = google.drive({ version: 'v3', auth });
-    console.log('[Drive] Google Drive client initialized');
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    drive = google.drive({ version: 'v3', auth: oauth2Client });
+    console.log('[Drive] Google Drive client initialized (OAuth2)');
   } catch (err) {
     console.error('[Drive] Failed to initialize Google Drive:', err.message);
   }
