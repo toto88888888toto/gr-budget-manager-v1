@@ -29,10 +29,10 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // ── SEED DATA ────────────────────────────────────────
-const SEED_FILE = path.join(ROOT_DIR, 'data', 'seed.xlsx');
-if (!fs.existsSync(EXCEL_FILE) && fs.existsSync(SEED_FILE)) {
-  fs.copyFileSync(SEED_FILE, EXCEL_FILE);
-  console.log('[Seed] Copied seed.xlsx to budget.xlsx');
+// If RESET_DATA=true env var is set, wipe budget.xlsx so app starts fresh
+if (process.env.RESET_DATA === 'true' && fs.existsSync(EXCEL_FILE)) {
+  fs.unlinkSync(EXCEL_FILE);
+  console.log('[Reset] Deleted budget.xlsx — starting fresh');
 }
 
 // ── GOOGLE DRIVE SETUP ────────────────────────────────
