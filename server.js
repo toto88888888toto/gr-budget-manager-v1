@@ -14,7 +14,7 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 
 const ROOT_DIR = __dirname;
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
-const DATA_DIR = IS_PROD ? '/data' : path.join(ROOT_DIR, 'data');
+const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(ROOT_DIR, 'data');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const EXCEL_FILE = path.join(DATA_DIR, 'budget.xlsx');
 
