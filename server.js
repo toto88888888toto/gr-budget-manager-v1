@@ -15,7 +15,7 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 const ROOT_DIR = __dirname;
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const DATA_DIR = path.join(ROOT_DIR, 'data');
-const UPLOAD_DIR = path.join(ROOT_DIR, 'uploads');
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const EXCEL_FILE = path.join(DATA_DIR, 'budget.xlsx');
 
 const LOGIN_HTML = path.join(PUBLIC_DIR, 'login.html');
@@ -27,6 +27,13 @@ const DEFAULT_VAT_PERCENT = 10;
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+// ── SEED DATA ────────────────────────────────────────
+const SEED_FILE = path.join(ROOT_DIR, 'data', 'seed.xlsx');
+if (!fs.existsSync(EXCEL_FILE) && fs.existsSync(SEED_FILE)) {
+  fs.copyFileSync(SEED_FILE, EXCEL_FILE);
+  console.log('[Seed] Copied seed.xlsx to budget.xlsx');
+}
 
 // ── GOOGLE DRIVE SETUP ────────────────────────────────
 const DRIVE_FOLDER_ID = process.env.DRIVE_FOLDER_ID || '';

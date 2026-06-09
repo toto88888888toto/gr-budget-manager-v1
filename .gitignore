@@ -143,6 +143,7 @@ vite.config.ts.timestamp-*
 uploads/*
 !uploads/.gitkeep
 data/*
+!data/seed.xlsx
 !data/.gitkeep
 *.bak
 public.zip
