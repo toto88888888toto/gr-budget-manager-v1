@@ -32,7 +32,7 @@ if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 const DRIVE_FOLDER_ID = process.env.DRIVE_FOLDER_ID || '';
 let drive = null;
 
-function initGoogleDrive() {
+async function initGoogleDrive() {
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -41,10 +41,14 @@ function initGoogleDrive() {
       console.log('[Drive] OAuth credentials or DRIVE_FOLDER_ID not set — skipping Drive sync');
       return;
     }
-    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+    console.log('[Drive] Token prefix:', refreshToken.substring(0, 10));
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, 'http://localhost');
     oauth2Client.setCredentials({ refresh_token: refreshToken });
+    // Verify token works at startup
+    const { token } = await oauth2Client.getAccessToken();
+    if (!token) throw new Error('No access token returned');
     drive = google.drive({ version: 'v3', auth: oauth2Client });
-    console.log('[Drive] Google Drive client initialized (OAuth2)');
+    console.log('[Drive] Google Drive client initialized (OAuth2) - token verified OK');
   } catch (err) {
     console.error('[Drive] Failed to initialize Google Drive:', err.message);
   }
