@@ -760,7 +760,13 @@ app.get('/api/me', (req, res) => {
   return res.json({ ok: true, user: req.session.user });
 });
 
-app.get('/api/health', async (req, res) => {
+app.get("/api/files", (req, res) => {
+  const uploads = fs.existsSync(UPLOAD_DIR) ? fs.readdirSync(UPLOAD_DIR) : [];
+  const dataFiles = fs.existsSync(DATA_DIR) ? fs.readdirSync(DATA_DIR) : [];
+  res.json({ dataDir: DATA_DIR, dataFiles, uploadCount: uploads.length, uploads });
+});
+
+app.get("/api/health", async (req, res) => {
   try {
     const excelExists = fs.existsSync(EXCEL_FILE);
     return res.status(200).json({
