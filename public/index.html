@@ -255,6 +255,7 @@
         <button type="button" class="modal-close" id="closeTxModal" aria-label="Close">✕</button>
       </div>
 
+      <div class="modal-body">
       <form id="transactionForm" enctype="multipart/form-data">
         <input type="hidden" id="selectedProjectId" name="projectId" />
 
@@ -322,6 +323,7 @@
           </div>
         </div>
       </form>
+      </div>
     </div>
   </div>
 
@@ -343,6 +345,8 @@
   <div id="projectFormDrawer" class="drawer hidden" aria-hidden="true">
     <div class="drawer-backdrop" id="drawerBackdrop"></div>
     <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+
+      <!-- Header -->
       <div class="drawer-header">
         <h3 id="drawerTitle">New Project</h3>
         <button type="button" class="modal-close" id="closeDrawer" aria-label="Close">
@@ -350,85 +354,106 @@
         </button>
       </div>
 
+      <!-- Body -->
       <div class="drawer-body">
         <form id="projectForm" enctype="multipart/form-data">
           <input type="hidden" id="editId" name="editId" />
           <input type="hidden" id="keepLogoPath" name="keepLogoPath" />
+          <input type="hidden" id="totalPriceRaw" name="totalPrice" />
 
-          <div class="form-grid">
-            <div class="field">
-              <label for="projectNo">No.</label>
-              <input id="projectNo" name="projectNo" type="text" readonly />
-            </div>
-            <div class="field">
-              <label for="projectCode">Project Code</label>
-              <input id="projectCode" name="projectCode" type="text" readonly />
-            </div>
-            <div class="field full">
-              <label for="projectName">Project Name <span style="color:var(--expense)">*</span></label>
-              <input id="projectName" name="projectName" type="text" placeholder="Enter project name" required />
-            </div>
-            <div class="field">
-              <label for="category">Category <span style="color:var(--expense)">*</span></label>
-              <input id="category" name="category" type="text" list="projectCategoryList" placeholder="Type or choose" required />
-            </div>
-            <div class="field">
-              <label for="owner">Owner</label>
-              <input id="owner" name="owner" type="text" list="filterOwnerList" placeholder="Person in charge" />
-            </div>
-            <div class="field">
-              <label for="startDate">Start Date</label>
-              <input id="startDate" name="startDate" type="date" />
-            </div>
-            <div class="field">
-              <label for="endDate">End Date</label>
-              <input id="endDate" name="endDate" type="date" />
-            </div>
-            <div class="field">
-              <label for="contractCurrency">Currency</label>
-              <select id="contractCurrency" name="contractCurrency">
-                <option value="LAK">LAK</option>
-                <option value="THB">THB</option>
-                <option value="USD">USD</option>
-                <option value="CNY">CNY</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="totalPrice">Total Price</label>
-              <input id="totalPrice" type="text" inputmode="decimal" placeholder="0" />
-              <input type="hidden" id="totalPriceRaw" name="totalPrice" />
-            </div>
-            <div class="field">
-              <label for="vatPercent">VAT %</label>
-              <input id="vatPercent" name="vatPercent" type="number" min="0" step="0.01" value="10" />
-            </div>
+          <div class="dialog-layout">
 
-            <!-- Expected Revenue Summary -->
-            <div class="field full">
-              <div class="contract-summary">
-                <div class="contract-summary-label">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                  Expected Contract Value (incl. VAT)
+            <!-- Left: Logo upload -->
+            <div class="dialog-left">
+              <div class="avatar-upload" id="avatarUploadArea">
+                <div class="avatar-wrap">
+                  <div class="avatar-preview" id="logoPreview">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="1.5"/><path d="M3 15l4-4 3 3 4-5 5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/></svg>
+                  </div>
+                  <button type="button" class="avatar-add-btn" id="avatarAddBtn">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                  </button>
                 </div>
-                <div class="contract-summary-value">
-                  <input id="totalPriceWithVatDisplay" type="text" readonly placeholder="Enter price above…" />
+                <p class="avatar-label">Company Logo</p>
+                <p class="avatar-hint">Max size: 5MB</p>
+                <input id="companyLogo" name="companyLogo" type="file" accept="image/*" style="display:none" />
+                <button type="button" class="btn btn-ghost btn-small" style="margin-top:8px" onclick="document.getElementById('companyLogo').click()">Upload</button>
+              </div>
+
+              <div class="dialog-meta">
+                <div class="field">
+                  <label for="projectNo">No.</label>
+                  <input id="projectNo" name="projectNo" type="text" readonly />
+                </div>
+                <div class="field">
+                  <label for="projectCode">Code</label>
+                  <input id="projectCode" name="projectCode" type="text" readonly />
                 </div>
               </div>
             </div>
-            <div class="field full">
-              <label for="remark">Remark</label>
-              <textarea id="remark" name="remark" placeholder="Optional notes…"></textarea>
-            </div>
-            <div class="field full">
-              <label for="companyLogo">Logo</label>
-              <input id="companyLogo" name="companyLogo" type="file" accept="image/*" />
-            </div>
-            <div class="field full">
-              <label>Preview</label>
-              <div class="logo-preview" id="logoPreview" style="min-height:64px;">No logo selected</div>
+
+            <!-- Right: Form fields -->
+            <div class="dialog-right">
+              <div class="field">
+                <label for="projectName">Project Name <span style="color:var(--expense)">*</span></label>
+                <input id="projectName" name="projectName" type="text" placeholder="Enter project name" required />
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="category">Category <span style="color:var(--expense)">*</span></label>
+                  <input id="category" name="category" type="text" list="projectCategoryList" placeholder="Type or choose" required />
+                </div>
+                <div class="field">
+                  <label for="owner">Owner</label>
+                  <input id="owner" name="owner" type="text" list="filterOwnerList" placeholder="Person in charge" />
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="startDate">Start Date</label>
+                  <input id="startDate" name="startDate" type="date" />
+                </div>
+                <div class="field">
+                  <label for="endDate">End Date</label>
+                  <input id="endDate" name="endDate" type="date" />
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field" style="flex:0 0 90px">
+                  <label for="contractCurrency">Currency</label>
+                  <select id="contractCurrency" name="contractCurrency">
+                    <option value="LAK">LAK</option>
+                    <option value="THB">THB</option>
+                    <option value="USD">USD</option>
+                    <option value="CNY">CNY</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="totalPrice">Total Price</label>
+                  <input id="totalPrice" type="text" inputmode="decimal" placeholder="0" />
+                </div>
+                <div class="field" style="flex:0 0 80px">
+                  <label for="vatPercent">VAT %</label>
+                  <input id="vatPercent" name="vatPercent" type="number" min="0" step="0.01" value="10" />
+                </div>
+              </div>
+              <div class="contract-summary">
+                <div class="contract-summary-label">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Contract Value (incl. VAT)
+                </div>
+                <div class="contract-summary-value">
+                  <input id="totalPriceWithVatDisplay" type="text" readonly placeholder="—" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="remark">Remark</label>
+                <textarea id="remark" name="remark" placeholder="Optional notes…" rows="2"></textarea>
+              </div>
             </div>
           </div>
 
+          <!-- Footer -->
           <div class="form-actions">
             <button class="btn btn-ghost" id="resetBtn" type="button">Clear</button>
             <button class="btn btn-primary" id="saveBtn" type="submit">Save Project</button>
