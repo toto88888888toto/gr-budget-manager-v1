@@ -29,19 +29,20 @@ function showConfirm(message) {
     const msg = document.getElementById('confirmMessage');
     const okBtn = document.getElementById('confirmOk');
     const cancelBtn = document.getElementById('confirmCancel');
-    if (!modal) return resolve(window.confirm(message));
+    if (!modal || !okBtn || !cancelBtn) return resolve(window.confirm(message));
     msg.textContent = message;
-    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    // Clone buttons to remove all previous listeners
+    const newOk = okBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
     const cleanup = (result) => {
-      modal.classList.add('hidden');
-      okBtn.removeEventListener('click', onOk);
-      cancelBtn.removeEventListener('click', onCancel);
+      modal.style.display = 'none';
       resolve(result);
     };
-    const onOk = () => cleanup(true);
-    const onCancel = () => cleanup(false);
-    okBtn.addEventListener('click', onOk);
-    cancelBtn.addEventListener('click', onCancel);
+    newOk.addEventListener('click', () => cleanup(true));
+    newCancel.addEventListener('click', () => cleanup(false));
   });
 }
 
