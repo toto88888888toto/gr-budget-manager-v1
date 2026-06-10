@@ -16,6 +16,8 @@ const ROOT_DIR = __dirname;
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(ROOT_DIR, 'data');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
+const LOGO_DIR = path.join(UPLOAD_DIR, 'logos');
+const BILL_DIR = path.join(UPLOAD_DIR, 'bills');
 const EXCEL_FILE = path.join(DATA_DIR, 'budget.xlsx');
 
 const LOGIN_HTML = path.join(PUBLIC_DIR, 'login.html');
@@ -27,6 +29,8 @@ const DEFAULT_VAT_PERCENT = 10;
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+if (!fs.existsSync(LOGO_DIR)) fs.mkdirSync(LOGO_DIR, { recursive: true });
+if (!fs.existsSync(BILL_DIR)) fs.mkdirSync(BILL_DIR, { recursive: true });
 
 // ── SEED DATA ────────────────────────────────────────
 // If RESET_DATA=true env var is set, wipe budget.xlsx so app starts fresh
@@ -119,29 +123,24 @@ async function uploadToDrive() {
 }
 
 // ── DRIVE IMAGE SYNC ──────────────────────────────────
-let driveUploadsFolderId = null;
+let driveLogosFolderId = null;
+let driveBillsFolderId = null;
 
-async function getOrCreateUploadsFolderInDrive() {
+async function getOrCreateSubfolder(name, parentId, cacheVar) {
   if (!drive) return null;
   try {
     const res = await drive.files.list({
-      q: `name='uploads' and '${DRIVE_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-      fields: 'files(id, name)',
-      spaces: 'drive'
+      q: `name='${name}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id, name)', spaces: 'drive'
     });
-    if (res.data.files?.length > 0) {
-      driveUploadsFolderId = res.data.files[0].id;
-      return driveUploadsFolderId;
-    }
+    if (res.data.files?.length > 0) return res.data.files[0].id;
     const folder = await drive.files.create({
-      requestBody: { name: 'uploads', mimeType: 'application/vnd.google-apps.folder', parents: [DRIVE_FOLDER_ID] },
-      media: undefined
+      requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] }
     });
-    driveUploadsFolderId = folder.data.id;
-    console.log('[Drive] Created uploads folder in Drive');
-    return driveUploadsFolderId;
+    console.log(`[Drive] Created '${name}' folder in Drive`);
+    return folder.data.id;
   } catch (err) {
-    console.error('[Drive] Failed to get/create uploads folder:', err.message);
+    console.error(`[Drive] Failed to get/create '${name}' folder:`, err.message);
     return null;
   }
 }
@@ -149,7 +148,13 @@ async function getOrCreateUploadsFolderInDrive() {
 async function uploadImageToDrive(filePath, fileName) {
   if (!drive) return;
   try {
-    const folderId = driveUploadsFolderId || await getOrCreateUploadsFolderInDrive();
+    const isLogo = filePath.includes('/logos/');
+    if (isLogo) {
+      driveLogosFolderId = driveLogosFolderId || await getOrCreateSubfolder('logos', DRIVE_FOLDER_ID);
+    } else {
+      driveBillsFolderId = driveBillsFolderId || await getOrCreateSubfolder('bills', DRIVE_FOLDER_ID);
+    }
+    const folderId = isLogo ? driveLogosFolderId : driveBillsFolderId;
     if (!folderId) return;
     const ext = path.extname(fileName).toLowerCase();
     const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.pdf': 'application/pdf', '.webp': 'image/webp' };
@@ -170,25 +175,33 @@ async function uploadImageToDrive(filePath, fileName) {
   }
 }
 
-async function downloadUploadsFromDrive() {
-  if (!drive) return;
+async function downloadFolderFromDrive(driveFolderId, localDir) {
   try {
-    const folderId = await getOrCreateUploadsFolderInDrive();
-    if (!folderId) return;
     const res = await drive.files.list({
-      q: `'${folderId}' in parents and trashed=false`,
+      q: `'${driveFolderId}' in parents and trashed=false`,
       fields: 'files(id, name)', spaces: 'drive'
     });
-    const files = res.data.files || [];
-    console.log(`[Drive] Syncing ${files.length} images from Drive`);
-    for (const f of files) {
-      const localPath = path.join(UPLOAD_DIR, f.name);
+    for (const f of (res.data.files || [])) {
+      const localPath = path.join(localDir, f.name);
       if (fs.existsSync(localPath)) continue;
       const dest = fs.createWriteStream(localPath);
       const response = await drive.files.get({ fileId: f.id, alt: 'media' }, { responseType: 'stream' });
       await new Promise((resolve, reject) => { response.data.pipe(dest); dest.on('finish', resolve); dest.on('error', reject); });
-      console.log('[Drive] Downloaded image:', f.name);
+      console.log('[Drive] Downloaded:', f.name);
     }
+  } catch (err) {
+    console.error('[Drive] Download folder failed:', err.message);
+  }
+}
+
+async function downloadUploadsFromDrive() {
+  if (!drive) return;
+  try {
+    driveLogosFolderId = driveLogosFolderId || await getOrCreateSubfolder('logos', DRIVE_FOLDER_ID);
+    driveBillsFolderId = driveBillsFolderId || await getOrCreateSubfolder('bills', DRIVE_FOLDER_ID);
+    if (driveLogosFolderId) await downloadFolderFromDrive(driveLogosFolderId, LOGO_DIR);
+    if (driveBillsFolderId) await downloadFolderFromDrive(driveBillsFolderId, BILL_DIR);
+    console.log('[Drive] Images synced from Drive');
   } catch (err) {
     console.error('[Drive] Download uploads failed:', err.message);
   }
@@ -197,7 +210,7 @@ async function downloadUploadsFromDrive() {
 function scheduleImageUpload(req) {
   if (!drive || !req.files) return;
   Object.values(req.files).flat().forEach(f => {
-    uploadImageToDrive(f.path, f.filename).catch(() => {});
+    uploadImageToDrive(f.path, f.filename).catch(err => console.error('[Drive] schedule upload failed:', err.message));
   });
 }
 
@@ -226,6 +239,8 @@ app.use(
 );
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
+app.use('/uploads/logos', express.static(LOGO_DIR, { maxAge: '7d' }));
+app.use('/uploads/bills', express.static(BILL_DIR, { maxAge: '7d' }));
 app.use(express.static(PUBLIC_DIR));
 
 app.use((req, res, next) => {
@@ -290,13 +305,16 @@ function normalizeStatus(value) {
 }
 
 function publicPathFromFile(file) {
-  return file ? `/uploads/${file.filename}` : '';
+  if (!file) return '';
+  if (file.fieldname === 'companyLogo') return `/uploads/logos/${file.filename}`;
+  if (file.fieldname === 'billFile') return `/uploads/bills/${file.filename}`;
+  return `/uploads/${file.filename}`;
 }
 
 function removePublicFile(filePath) {
   try {
     if (!filePath || typeof filePath !== 'string' || !filePath.startsWith('/uploads/')) return;
-    const fullPath = path.join(UPLOAD_DIR, filePath.replace('/uploads/', ''));
+    const fullPath = path.join(DATA_DIR, filePath.replace('/', ''));
     if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
   } catch (error) {
     console.error('Failed deleting file', filePath, error.message);
@@ -340,7 +358,11 @@ function ensureHeaders(sheet, headers) {
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  destination: (req, file, cb) => {
+    if (file.fieldname === 'companyLogo') return cb(null, LOGO_DIR);
+    if (file.fieldname === 'billFile') return cb(null, BILL_DIR);
+    cb(null, UPLOAD_DIR);
+  },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname || '');
     const base = path
