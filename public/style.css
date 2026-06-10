@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   --bg: #f0ede8;
@@ -34,7 +34,7 @@
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
-  --font: 'Sofia Sans', -apple-system, sans-serif;
+  --font: 'Poppins', -apple-system, sans-serif;
   --max: 1320px;
 }
 
@@ -866,22 +866,23 @@ body.dark .status-on_hold {
 .fab-add-project:active { transform: translateY(0); }
 
 /* ── DRAWER ─────────────────────────────────────── */
-.drawer { position: fixed; inset: 0; z-index: 500; display: flex; justify-content: flex-end; }
+.drawer { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; }
 .drawer.hidden { display: none !important; }
 .drawer-backdrop {
   position: absolute; inset: 0;
-  background: rgba(0,0,0,0.35); backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
   animation: fadeIn .2s ease;
 }
 .drawer-panel {
   position: relative; z-index: 2;
-  width: min(420px, 100%); height: 100%;
-  background: var(--surface); border-left: 1px solid var(--border);
+  width: min(560px, 95vw); max-height: 90vh;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px;
   display: flex; flex-direction: column;
-  box-shadow: -12px 0 40px rgba(0,0,0,0.1);
-  animation: slideIn .22s cubic-bezier(0.32,0.72,0,1);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+  animation: popIn .22s cubic-bezier(0.32,0.72,0,1);
 }
-@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .drawer-header {
@@ -969,7 +970,7 @@ body.dark .status-on_hold {
   .summary-bar { grid-template-columns: 1fr 1fr; }
   .filter-row { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
-  .drawer-panel { width: 100%; }
+  .drawer-panel { width: min(560px, 95vw); border-radius: 12px; }
   .modal { padding: 10px; }
   .modal-dialog { padding: 16px; border-radius: var(--radius); }
   .fab-add-project span { display: none; }
