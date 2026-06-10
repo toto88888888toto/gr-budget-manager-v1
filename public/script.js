@@ -1,5 +1,3 @@
-(async function () {
-
 // ── TOAST & CONFIRM ──────────────────────────────────
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
@@ -46,6 +44,7 @@ function showConfirm(message) {
   });
 }
 
+(async function () {
   const res = await fetch('/api/me');
   if (!res.ok) {
     window.location.href = '/login.html';
