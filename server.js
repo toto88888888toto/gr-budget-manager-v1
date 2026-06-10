@@ -118,6 +118,89 @@ async function uploadToDrive() {
   }
 }
 
+// ── DRIVE IMAGE SYNC ──────────────────────────────────
+let driveUploadsFolderId = null;
+
+async function getOrCreateUploadsFolderInDrive() {
+  if (!drive) return null;
+  try {
+    const res = await drive.files.list({
+      q: `name='uploads' and '${DRIVE_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id, name)',
+      spaces: 'drive'
+    });
+    if (res.data.files?.length > 0) {
+      driveUploadsFolderId = res.data.files[0].id;
+      return driveUploadsFolderId;
+    }
+    const folder = await drive.files.create({
+      requestBody: { name: 'uploads', mimeType: 'application/vnd.google-apps.folder', parents: [DRIVE_FOLDER_ID] },
+      media: undefined
+    });
+    driveUploadsFolderId = folder.data.id;
+    console.log('[Drive] Created uploads folder in Drive');
+    return driveUploadsFolderId;
+  } catch (err) {
+    console.error('[Drive] Failed to get/create uploads folder:', err.message);
+    return null;
+  }
+}
+
+async function uploadImageToDrive(filePath, fileName) {
+  if (!drive) return;
+  try {
+    const folderId = driveUploadsFolderId || await getOrCreateUploadsFolderInDrive();
+    if (!folderId) return;
+    const ext = path.extname(fileName).toLowerCase();
+    const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.pdf': 'application/pdf', '.webp': 'image/webp' };
+    const mimeType = mimeMap[ext] || 'application/octet-stream';
+    const existing = await drive.files.list({
+      q: `name='${fileName}' and '${folderId}' in parents and trashed=false`,
+      fields: 'files(id)', spaces: 'drive'
+    });
+    const media = { mimeType, body: fs.createReadStream(filePath) };
+    if (existing.data.files?.length > 0) {
+      await drive.files.update({ fileId: existing.data.files[0].id, media });
+    } else {
+      await drive.files.create({ requestBody: { name: fileName, parents: [folderId] }, media });
+    }
+    console.log('[Drive] Uploaded image:', fileName);
+  } catch (err) {
+    console.error('[Drive] Image upload failed:', fileName, err.message);
+  }
+}
+
+async function downloadUploadsFromDrive() {
+  if (!drive) return;
+  try {
+    const folderId = await getOrCreateUploadsFolderInDrive();
+    if (!folderId) return;
+    const res = await drive.files.list({
+      q: `'${folderId}' in parents and trashed=false`,
+      fields: 'files(id, name)', spaces: 'drive'
+    });
+    const files = res.data.files || [];
+    console.log(`[Drive] Syncing ${files.length} images from Drive`);
+    for (const f of files) {
+      const localPath = path.join(UPLOAD_DIR, f.name);
+      if (fs.existsSync(localPath)) continue;
+      const dest = fs.createWriteStream(localPath);
+      const response = await drive.files.get({ fileId: f.id, alt: 'media' }, { responseType: 'stream' });
+      await new Promise((resolve, reject) => { response.data.pipe(dest); dest.on('finish', resolve); dest.on('error', reject); });
+      console.log('[Drive] Downloaded image:', f.name);
+    }
+  } catch (err) {
+    console.error('[Drive] Download uploads failed:', err.message);
+  }
+}
+
+function scheduleImageUpload(req) {
+  if (!drive || !req.files) return;
+  Object.values(req.files).flat().forEach(f => {
+    uploadImageToDrive(f.path, f.filename).catch(() => {});
+  });
+}
+
 initGoogleDrive();
 
 app.set('trust proxy', 1);
@@ -849,6 +932,7 @@ app.post('/api/projects', requireAuth, projectUpload, async (req, res) => {
       };
     });
 
+    scheduleImageUpload(req);
     return res.status(result.status).json(result.body);
   } catch (error) {
     console.error('Cannot save project:', error);
@@ -901,6 +985,7 @@ app.put('/api/projects/:id', requireAuth, projectUpload, async (req, res) => {
       };
     });
 
+    scheduleImageUpload(req);
     return res.status(result.status).json(result.body);
   } catch (error) {
     console.error('Cannot update project:', error);
@@ -1026,6 +1111,7 @@ app.post('/api/projects/:id/transactions', requireAuth, transactionUpload, async
       };
     });
 
+    scheduleImageUpload(req);
     return res.status(result.status).json(result.body);
   } catch (error) {
     console.error('Cannot save transaction:', error);
@@ -1103,6 +1189,7 @@ process.on('unhandledRejection', (reason) => {
 
 app.listen(PORT, '0.0.0.0', async () => {
   await downloadFromDrive();
+  await downloadUploadsFromDrive();
   console.log(`Glori Budget Manager running on port ${PORT}`);
   console.log(`NODE_ENV=${process.env.NODE_ENV || 'development'}`);
   console.log(`PUBLIC_DIR=${PUBLIC_DIR}`);
