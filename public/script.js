@@ -1053,6 +1053,7 @@ async function handleProjectListClick(event) {
       currentProjectId = project.id || "";
       populateProjectForm(project);
       closeProjectModal();
+      if (typeof window.openProjectDrawer === 'function') window.openProjectDrawer();
       return;
     }
 
