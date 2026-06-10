@@ -82,7 +82,9 @@ async function findDriveFile(name) {
   const res = await drive.files.list({
     q: `name='${name}' and '${DRIVE_FOLDER_ID}' in parents and trashed=false`,
     fields: 'files(id, name)',
-    spaces: 'drive'
+    spaces: 'drive',
+    includeItemsFromAllDrives: true,
+    supportsAllDrives: true
   });
   return res.data.files?.[0] || null;
 }
@@ -120,11 +122,12 @@ async function uploadToDrive() {
     };
     const existing = await findDriveFile('budget.xlsx');
     if (existing) {
-      await drive.files.update({ fileId: existing.id, media });
+      await drive.files.update({ fileId: existing.id, media, supportsAllDrives: true });
     } else {
       await drive.files.create({
         requestBody: { name: 'budget.xlsx', parents: [DRIVE_FOLDER_ID] },
-        media
+        media,
+        supportsAllDrives: true
       });
     }
     console.log('[Drive] Synced budget.xlsx to Google Drive');
