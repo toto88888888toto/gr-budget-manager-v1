@@ -490,7 +490,10 @@
       document.body.classList.remove('modal-open');
     }
 
-    fab.addEventListener('click', openDrawer);
+    fab.addEventListener('click', () => {
+      if (typeof resetProjectForm === 'function') resetProjectForm();
+      openDrawer();
+    });
     closeDrawerBtn.addEventListener('click', closeDrawerFn);
     drawerBackdrop.addEventListener('click', closeDrawerFn);
     window.openProjectDrawer = openDrawer;
