@@ -41,37 +41,19 @@ let drive = null;
 
 async function initGoogleDrive() {
   try {
-    if (!DRIVE_FOLDER_ID) {
-      console.log('[Drive] DRIVE_FOLDER_ID not set — skipping Drive sync');
-      return;
-    }
-    // Prefer service account
-    const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT;
-    if (serviceAccountJson) {
-      const credentials = JSON.parse(serviceAccountJson);
-      const auth = new google.auth.GoogleAuth({
-        credentials,
-        scopes: ['https://www.googleapis.com/auth/drive']
-      });
-      drive = google.drive({ version: 'v3', auth });
-      console.log('[Drive] Google Drive client initialized (Service Account)');
-      console.log('[Drive] Service account email:', credentials.client_email);
-      return;
-    }
-    // Fall back to OAuth2
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-    if (!clientId || !clientSecret || !refreshToken) {
-      console.log('[Drive] No credentials set — skipping Drive sync');
+    if (!clientId || !clientSecret || !refreshToken || !DRIVE_FOLDER_ID) {
+      console.log('[Drive] OAuth credentials or DRIVE_FOLDER_ID not set — skipping Drive sync');
       return;
     }
-    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, 'http://localhost');
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, 'http://localhost:3333/callback');
     oauth2Client.setCredentials({ refresh_token: refreshToken });
     const { token } = await oauth2Client.getAccessToken();
     if (!token) throw new Error('No access token returned');
     drive = google.drive({ version: 'v3', auth: oauth2Client });
-    console.log('[Drive] Google Drive client initialized (OAuth2)');
+    console.log('[Drive] Google Drive client initialized (OAuth2) - token verified OK');
   } catch (err) {
     console.error('[Drive] Failed to initialize Google Drive:', err.message);
   }
