@@ -433,8 +433,8 @@ async function loadNextProjectCode() {
 }
 
 function clearLogoPreview() {
-  logoPreview.className = "logo-preview empty";
-  logoPreview.innerHTML = "No logo selected";
+  logoPreview.className = "avatar-preview";
+  logoPreview.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="1.5"/><path d="M3 15l4-4 3 3 4-5 5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/></svg>';
 }
 
 function showLogoPreview(src) {
@@ -443,7 +443,7 @@ function showLogoPreview(src) {
     return;
   }
 
-  logoPreview.className = "logo-preview";
+  logoPreview.className = "avatar-preview";
   logoPreview.innerHTML = `<img src="${src}" alt="Logo Preview">`;
 }
 
@@ -1215,6 +1215,7 @@ function attachEvents() {
   logoutBtn?.addEventListener("click", handleLogout);
 
   companyLogo.addEventListener("change", handleLogoInputChange);
+  document.getElementById("avatarAddBtn")?.addEventListener("click", () => companyLogo.click());
   txAmount.addEventListener("input", handleAmountInput);
   txType.addEventListener("change", handleTxTypeChange);
 

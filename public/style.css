@@ -983,3 +983,127 @@ body.dark .status-on_hold {
   .fab-add-project span { display: none; }
   .fab-add-project { width: 48px; padding: 0; justify-content: center; border-radius: 50%; }
 }
+/* ── DIALOG TWO-COLUMN LAYOUT ───────────────────────── */
+.dialog-layout {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.dialog-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.dialog-right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Avatar / logo upload */
+.avatar-upload { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+.avatar-wrap {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.avatar-preview {
+  width: 100px;
+  height: 100px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  border: 2px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--muted);
+  transition: border-color .15s;
+}
+
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.avatar-preview:hover { border-color: var(--accent); }
+
+.avatar-add-btn {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: 2px solid var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: background .15s;
+}
+
+.avatar-add-btn:hover { background: var(--accent-dark, #c05a00); }
+
+.avatar-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+}
+
+.avatar-hint {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* No. / Code mini fields below avatar */
+.dialog-meta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dialog-meta .field label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dialog-meta .field input {
+  font-size: 13px;
+  background: var(--surface-2);
+  border-color: transparent;
+}
+
+/* Side-by-side field pairs */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Responsive: stack on narrow screens */
+@media (max-width: 640px) {
+  .dialog-layout { grid-template-columns: 1fr; }
+  .dialog-left { flex-direction: row; align-items: flex-start; }
+  .avatar-wrap { width: 72px; height: 72px; }
+  .avatar-preview { width: 72px; height: 72px; border-radius: 12px; }
+  .field-row { grid-template-columns: 1fr; }
+}
