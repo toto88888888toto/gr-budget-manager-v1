@@ -951,13 +951,7 @@ async function submitProjectForm(event) {
     const result = await fetchJSON(url, { method, body: formData });
     await loadProjects(false);
     resetProjectForm();
-
-    if (result?.project) {
-      const safeProject = normalizeProject(result.project);
-      currentProjectId = safeProject.id || "";
-      openProjectModal(safeProject);
-    }
-
+    if (typeof window.closeProjectDrawer === 'function') window.closeProjectDrawer();
     showToast(isEdit ? "Project updated successfully" : "Project saved successfully");
   } catch (error) {
     showToast(error.message, "error");
