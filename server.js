@@ -117,7 +117,7 @@ async function uploadToDrive() {
   }
 }
 
-// initGoogleDrive(); // Disabled — using Railway Volume
+initGoogleDrive();
 
 app.set('trust proxy', 1);
 
@@ -364,7 +364,7 @@ function queueWrite(task) {
 async function saveWorkbook(workbook) {
   await workbook.xlsx.writeFile(EXCEL_FILE);
   invalidateWorkbookCache();
-  // await uploadToDrive(); // Disabled — using Railway Volume
+  await uploadToDrive();
 }
 
 function rowToProject(row) {
@@ -1101,7 +1101,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 app.listen(PORT, '0.0.0.0', async () => {
-  // await downloadFromDrive(); // Disabled — using Railway Volume
+  await downloadFromDrive();
   console.log(`Glori Budget Manager running on port ${PORT}`);
   console.log(`NODE_ENV=${process.env.NODE_ENV || 'development'}`);
   console.log(`PUBLIC_DIR=${PUBLIC_DIR}`);
