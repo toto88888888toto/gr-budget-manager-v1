@@ -6,288 +6,253 @@
   <title>Login — GR Budget Manager</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #f0ede8;
-      --surface:  #ffffff;
-      --surface-2:#f7f5f2;
-      --border:   rgba(0,0,0,0.08);
-      --border-2: rgba(0,0,0,0.14);
-      --text:     #1a1815;
-      --text-2:   #5c5650;
-      --muted:    #9e958c;
-      --accent:   #c8703a;
-      --accent-h: #b05e2a;
-      --accent-light: #fdf1ea;
-      --accent-glow:  rgba(200,112,58,0.18);
-      --success:  #3d8f6a;
-      --danger:   #b85c5c;
-      --shadow:   0 8px 32px rgba(60,40,20,0.12), 0 2px 8px rgba(60,40,20,0.07);
-      --shadow-lg:0 24px 64px rgba(60,40,20,0.14), 0 6px 20px rgba(60,40,20,0.08);
-      --radius:   14px;
-      --font:     'Sofia Sans', -apple-system, sans-serif;
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --placeholder: #9ca3af;
+      --input-bg: #f9fafb;
+      --btn-bg: #111827;
+      --btn-hover: #1f2937;
+      --accent: #111827;
+      --danger: #ef4444;
+      --font: 'Poppins', -apple-system, sans-serif;
     }
 
     body.dark {
-      --bg:        #0f0f0f;
-      --surface:   #1a1a1a;
-      --surface-2: #222222;
-      --border:    rgba(255,255,255,0.07);
-      --border-2:  rgba(255,255,255,0.13);
-      --text:      #f0f0f0;
-      --text-2:    #a0a0a0;
-      --muted:     #606060;
-      --accent:    #e8843e;
-      --accent-h:  #d4702a;
-      --accent-light: rgba(232,132,62,0.12);
-      --accent-glow:  rgba(232,132,62,0.22);
-      --shadow:    0 8px 32px rgba(0,0,0,0.5);
-      --shadow-lg: 0 24px 64px rgba(0,0,0,0.6);
+      --bg: #0f0f0f;
+      --surface: #0f0f0f;
+      --border: #262626;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --placeholder: #4b5563;
+      --input-bg: #1a1a1a;
+      --btn-bg: #f9fafb;
+      --btn-hover: #e5e7eb;
+      --accent: #f9fafb;
     }
 
     body {
       font-family: var(--font);
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-      padding: 20px;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
       -webkit-font-smoothing: antialiased;
-      transition: background .3s ease, color .3s ease;
-    }
-
-    /* Subtle background texture */
-    body::before {
-      content: '';
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background:
-        radial-gradient(ellipse 70% 60% at 10% 0%, rgba(200,112,58,0.05) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 50% at 90% 100%, rgba(123,143,166,0.04) 0%, transparent 60%);
+      transition: background .2s, color .2s;
     }
 
     .wrap {
-      width: 100%; max-width: 420px;
-      position: relative; z-index: 1;
+      width: 100%;
+      max-width: 360px;
     }
 
-    /* ── Logo area ── */
-    .logo-area {
-      text-align: center; margin-bottom: 28px;
+    /* Logo */
+    .logo-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 32px;
     }
 
-    .logo-img-wrap {
-      width: 64px; height: 64px;
-      background: var(--accent-light);
-      border: 1px solid rgba(200,112,58,0.2);
-      border-radius: 18px;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 16px;
+    .logo-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 4px 16px var(--accent-glow);
+      flex-shrink: 0;
     }
 
-    .logo-img-wrap img {
+    .logo-icon img {
       width: 100%; height: 100%; object-fit: contain;
     }
 
-    .logo-img-wrap .logo-fallback {
-      font-size: 26px; font-weight: 800; color: var(--accent);
-      letter-spacing: -0.04em;
+    .logo-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
     }
 
-    .logo-area h1 {
-      font-size: 22px; font-weight: 800;
-      letter-spacing: -0.02em; color: var(--text);
-      margin-bottom: 5px;
+    /* Header */
+    .heading {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
     }
 
-    .logo-area p {
-      font-size: 13px; color: var(--muted); font-weight: 400;
+    .subheading {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 28px;
+      line-height: 1.5;
     }
 
-    /* ── Card ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .card-title {
-      font-size: 17px; font-weight: 700;
-      color: var(--text); margin-bottom: 6px;
-    }
-
-    .card-sub {
-      font-size: 13px; color: var(--muted);
-      margin-bottom: 26px; line-height: 1.5;
-    }
-
-    /* ── Form fields ── */
+    /* Fields */
     .field {
-      display: flex; flex-direction: column; gap: 6px;
       margin-bottom: 16px;
     }
 
     label {
-      font-size: 11px; font-weight: 700;
-      letter-spacing: .07em; text-transform: uppercase;
-      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
     }
 
     input {
-      height: 46px;
-      background: var(--surface-2);
-      border: 1px solid var(--border-2);
-      border-radius: 10px;
-      padding: 0 14px;
-      font-size: 15px; font-family: var(--font);
-      color: var(--text); outline: none;
-      transition: border-color .15s ease, box-shadow .15s ease;
       width: 100%;
+      height: 42px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 14px;
+      font-size: 14px;
+      font-family: var(--font);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
     }
 
     input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
+      border-color: var(--text);
+      box-shadow: 0 0 0 3px rgba(17,24,39,0.08);
     }
 
-    input::placeholder { color: var(--muted); font-weight: 400; }
+    body.dark input:focus {
+      box-shadow: 0 0 0 3px rgba(249,250,251,0.1);
+    }
 
-    /* ── Submit button ── */
+    input::placeholder { color: var(--placeholder); }
+
+    /* Button */
     .btn-submit {
-      width: 100%; height: 48px;
-      background: var(--accent);
-      border: none; border-radius: 10px;
-      color: #fff; font-family: var(--font);
-      font-size: 16px; font-weight: 700;
-      cursor: pointer; margin-top: 6px;
-      transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      height: 42px;
+      background: var(--btn-bg);
+      color: body.dark ? var(--text) : #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background .15s, opacity .15s;
+      color: #ffffff;
     }
 
-    .btn-submit:hover {
-      background: var(--accent-h);
-      transform: translateY(-1px);
-      box-shadow: 0 8px 24px var(--accent-glow);
+    body.dark .btn-submit {
+      color: #111827;
     }
 
-    .btn-submit:active { transform: translateY(0); box-shadow: none; }
+    .btn-submit:hover { opacity: 0.88; }
+    .btn-submit:active { opacity: 0.75; }
+    .btn-submit:disabled { opacity: .5; cursor: not-allowed; }
 
-    .btn-submit:disabled {
-      opacity: .5; cursor: not-allowed;
-      transform: none; box-shadow: none;
-    }
-
-    /* ── Error ── */
+    /* Error */
     #err {
-      min-height: 20px; margin-top: 14px;
-      font-size: 13px; font-weight: 500;
-      text-align: center; color: var(--danger);
-      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 12px;
+      color: var(--danger);
+      text-align: center;
+      margin-top: 10px;
+      min-height: 18px;
+      font-weight: 500;
     }
 
-    /* ── Divider ── */
-    .divider {
-      height: 1px; background: var(--border);
-      margin: 24px 0;
+    /* Footer */
+    .footer {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 20px;
     }
 
-    .footer-note {
-      text-align: center; font-size: 12px; color: var(--muted);
-    }
-
-    /* ── Dark toggle ── */
+    /* Dark toggle */
     .theme-btn {
-      position: fixed; top: 18px; right: 18px;
-      width: 40px; height: 40px;
-      background: var(--surface);
-      border: 1px solid var(--border-2);
-      border-radius: 10px;
+      position: fixed;
+      top: 16px; right: 16px;
+      width: 36px; height: 36px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; box-shadow: var(--shadow);
-      transition: all .15s ease; z-index: 10;
-      color: var(--text-2);
+      cursor: pointer;
+      color: var(--muted);
+      transition: all .15s;
     }
 
-    .theme-btn:hover { background: var(--surface-2); color: var(--text); }
-
+    .theme-btn:hover { color: var(--text); }
     body:not(.dark) .icon-moon { display: none; }
     body.dark .icon-sun { display: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-  <!-- Dark mode toggle -->
   <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode">
-    <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
       <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
     </svg>
-    <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none">
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
 
   <div class="wrap">
-
-    <div class="logo-area">
-      <div class="logo-img-wrap">
-        <img src="/images/Logo.png" alt="GR Logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-        <span class="logo-fallback" style="display:none">GR</span>
+    <div class="logo-row">
+      <div class="logo-icon">
+        <img src="/images/Logo.png" alt="GR" onerror="this.parentElement.innerHTML='<span style=\'font-weight:700;font-size:13px\'>GR</span>'" />
       </div>
-      <h1>GR Budget Manager</h1>
-      <p>Glori Creativity Sole Co., Ltd</p>
+      <span class="logo-name">GR Budget Manager</span>
     </div>
 
-    <div class="card">
-      <div class="card-title">Welcome back</div>
-      <div class="card-sub">Sign in to manage your projects and transactions.</div>
+    <h1 class="heading">Welcome Back</h1>
+    <p class="subheading">Enter your credentials to access your account.</p>
 
-      <form id="form">
-        <div class="field">
-          <label for="u">Username</label>
-          <input id="u" type="text" placeholder="Enter your username" autocomplete="username" required />
-        </div>
+    <form id="form">
+      <div class="field">
+        <label for="u">Username</label>
+        <input id="u" type="text" placeholder="Enter your username" autocomplete="username" required />
+      </div>
 
-        <div class="field">
-          <label for="p">Password</label>
-          <input id="p" type="password" placeholder="Enter your password" autocomplete="current-password" required />
-        </div>
+      <div class="field">
+        <label for="p">Password</label>
+        <input id="p" type="password" placeholder="••••••••••••••" autocomplete="current-password" required />
+      </div>
 
-        <button class="btn-submit" id="btn" type="submit">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Sign In
-        </button>
+      <button class="btn-submit" id="btn" type="submit">Sign in</button>
+      <div id="err"></div>
+    </form>
 
-        <div id="err"></div>
-      </form>
-
-      <div class="divider"></div>
-      <div class="footer-note">Project first · then add income / investment / expense</div>
-    </div>
-
+    <p class="footer">Glori Creativity Sole Co., Ltd</p>
   </div>
 
   <script>
-    // Dark mode — sync with main app preference
     const saved = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const isDark = saved === 'dark' || (!saved && prefersDark);
-    if (isDark) document.body.classList.add('dark');
+    if (saved === 'dark' || (!saved && prefersDark)) document.body.classList.add('dark');
 
     document.getElementById('themeBtn').addEventListener('click', () => {
       const dark = document.body.classList.toggle('dark');
       localStorage.setItem('theme', dark ? 'dark' : 'light');
     });
 
-    // Login form
     const form = document.getElementById('form');
     const u    = document.getElementById('u');
     const p    = document.getElementById('p');
@@ -298,7 +263,7 @@
       e.preventDefault();
       err.textContent = '';
       btn.disabled = true;
-      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10" style="animation:spin .8s linear infinite;transform-origin:center"/></svg> Signing in…';
+      btn.textContent = 'Signing in…';
 
       try {
         const res  = await fetch('/api/login', {
@@ -307,24 +272,19 @@
           body: JSON.stringify({ username: u.value.trim(), password: p.value })
         });
         const data = await res.json();
-
         if (!res.ok || !data.ok) {
           err.textContent = data.message || 'Wrong username or password';
           btn.disabled = false;
-          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Sign In';
+          btn.textContent = 'Sign in';
           return;
         }
         location.href = '/';
       } catch {
         err.textContent = 'Cannot connect to server';
         btn.disabled = false;
-        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Sign In';
+        btn.textContent = 'Sign in';
       }
     });
   </script>
-
-  <style>
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
 </body>
 </html>
