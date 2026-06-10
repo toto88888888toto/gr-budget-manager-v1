@@ -564,5 +564,20 @@
       if (el) contractObs.observe(el, { childList: true, characterData: true, subtree: true });
     });
   </script>
+
+  <!-- Toast Notification -->
+  <div id="toastContainer" style="position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;"></div>
+
+  <!-- Custom Confirm Modal -->
+  <div id="confirmModal" class="hidden" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);">
+    <div style="background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:28px 32px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <p id="confirmMessage" style="color:#e2e8f0;font-size:15px;margin:0 0 24px;line-height:1.6;"></p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button id="confirmCancel" style="padding:8px 20px;border-radius:8px;border:1px solid #444;background:transparent;color:#94a3b8;cursor:pointer;font-size:14px;">Cancel</button>
+        <button id="confirmOk" style="padding:8px 20px;border-radius:8px;border:none;background:#ef4444;color:#fff;cursor:pointer;font-size:14px;font-weight:600;">Delete</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

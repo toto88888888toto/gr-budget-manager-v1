@@ -1,4 +1,50 @@
 (async function () {
+
+// ── TOAST & CONFIRM ──────────────────────────────────
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const colors = { success: '#22c55e', error: '#ef4444', info: '#3b82f6' };
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const toast = document.createElement('div');
+  toast.style.cssText = `pointer-events:auto;background:#1e1e2e;border:1px solid ${colors[type] || colors.info}44;color:#e2e8f0;padding:12px 18px;border-radius:10px;font-size:14px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.4);min-width:240px;max-width:360px;opacity:0;transform:translateX(20px);transition:all 0.25s ease;`;
+  const icon = document.createElement('span');
+  icon.style.cssText = `width:22px;height:22px;border-radius:50%;background:${colors[type] || colors.info};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;`;
+  icon.textContent = icons[type] || icons.info;
+  const text = document.createElement('span');
+  text.textContent = message;
+  toast.appendChild(icon);
+  toast.appendChild(text);
+  container.appendChild(toast);
+  requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; });
+  setTimeout(() => {
+    toast.style.opacity = '0'; toast.style.transform = 'translateX(20px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+function showConfirm(message) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirmModal');
+    const msg = document.getElementById('confirmMessage');
+    const okBtn = document.getElementById('confirmOk');
+    const cancelBtn = document.getElementById('confirmCancel');
+    if (!modal) return resolve(window.confirm(message));
+    msg.textContent = message;
+    modal.classList.remove('hidden');
+    const cleanup = (result) => {
+      modal.classList.add('hidden');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    };
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+
   const res = await fetch('/api/me');
   if (!res.ok) {
     window.location.href = '/login.html';
@@ -912,9 +958,9 @@ async function submitProjectForm(event) {
       openProjectModal(safeProject);
     }
 
-    alert(isEdit ? "Project updated successfully" : "Project saved successfully");
+    showToast(isEdit ? "Project updated successfully" : "Project saved successfully");
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   } finally {
     const nowEdit = Boolean(editId.value.trim());
     setButtonLoading(
@@ -931,7 +977,7 @@ async function submitTransactionForm(event) {
 
   const projectId = selectedProjectId.value.trim();
   if (!projectId) {
-    alert("Please select a project first");
+    showToast("Please select a project first", "info");
     return;
   }
 
@@ -966,9 +1012,9 @@ async function submitTransactionForm(event) {
 
     resetTransactionForm(true);
     closeTxModal();
-    alert("Transaction saved successfully");
+    showToast("Transaction saved successfully");
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   } finally {
     setButtonLoading(addTxBtn, false, "Add Transaction", "");
   }
@@ -978,7 +1024,7 @@ async function deleteProjectById(id) {
   const project = allProjects.find((item) => item.id === id);
   if (!project) return;
 
-  if (!confirm(`Delete project "${project.projectName}" and all related transactions?`)) {
+  if (!await showConfirm(`Delete project "${project.projectName}" and all related transactions?`)) {
     return;
   }
 
@@ -995,9 +1041,9 @@ async function deleteProjectById(id) {
 
     await loadProjects(true);
     resetProjectForm();
-    alert("Project deleted");
+    showToast("Project deleted");
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   }
 }
 
@@ -1020,7 +1066,7 @@ async function handleStatusChange(event) {
       body: JSON.stringify({ status: newStatus }),
     });
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
     // Reload to revert UI
     await loadProjects(true);
   }
@@ -1080,7 +1126,7 @@ async function handleHistoryClick(event) {
   if (!button) return;
 
   const txId = button.dataset.id;
-  if (!confirm("Delete this transaction?")) return;
+  if (!await showConfirm("Delete this transaction?")) return;
 
   try {
     await fetchJSON(`/api/transactions/${txId}`, { method: "DELETE" });
@@ -1096,9 +1142,9 @@ async function handleHistoryClick(event) {
       closeProjectModal();
     }
 
-    alert("Transaction deleted");
+    showToast("Transaction deleted");
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   }
 }
 
@@ -1153,7 +1199,7 @@ async function handleLogout() {
     await fetchJSON("/api/logout", { method: "POST" });
     window.location.href = "/login.html";
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   }
 }
 
@@ -1165,7 +1211,7 @@ function attachEvents() {
   clearTxBtn.addEventListener("click", () => resetTransactionForm(true));
 
   refreshBtn.addEventListener("click", () => {
-    loadProjects(true).catch((error) => alert(error.message));
+    loadProjects(true).catch((error) => showToast(error.message, "error"));
   });
 
   downloadExcelBtn.addEventListener("click", () => {
@@ -1244,5 +1290,5 @@ async function init() {
 
 init().catch((error) => {
   console.error(error);
-  alert(error.message || "Failed to load app");
+  showToast(error.message || "Failed to load app", "error");
 });
