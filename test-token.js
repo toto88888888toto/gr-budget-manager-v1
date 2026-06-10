@@ -2,8 +2,8 @@
 const https = require('https');
 
 const CLIENT_ID = '416096251316-ksp0m60vhheicqvb4jcngs5a226r96gg.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
-const REFRESH_TOKEN = '1//0g1Tfl-HtQJiDCgYIARAAgBASNwF-L9IrCmPKqZ84CkeRkq7vmEt-tMnEcvLrRXMRNcYMl2EdbeBHeMUUQaFAJFp12Rsu2I47h7E';
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
 
 const postData = new URLSearchParams({
   client_id: CLIENT_ID,

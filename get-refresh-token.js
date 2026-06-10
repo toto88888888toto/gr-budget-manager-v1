@@ -4,7 +4,7 @@ const url = require('url');
 const https = require('https');
 
 const CLIENT_ID = '416096251316-ksp0m60vhheicqvb4jcngs5a226r96gg.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = 'http://localhost:3333/callback';
 
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);

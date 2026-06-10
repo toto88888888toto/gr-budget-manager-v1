@@ -1,8 +1,8 @@
 const { google } = require('googleapis');
 
 const CLIENT_ID = '416096251316-ksp0m60vhheicqvb4jcngs5a226r96gg.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
-const REFRESH_TOKEN = '1//0gW60wXobnzyNCgYIARAAgBASNwF-L9Ir2Pp_H3TDu0VrgdM8_BjLLdysuCbkSqbmBHG9NpT0la3RWP4SdFoQyXyDEzsJ3ejO5Wk';
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
 const DRIVE_FOLDER_ID = '14zwZ7CCau3cA_lbXRI_dmE8xly099LZ2';
 
 async function test() {
