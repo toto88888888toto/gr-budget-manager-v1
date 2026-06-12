@@ -215,7 +215,7 @@
             </div>
             <div class="field full">
               <label for="editTxDescription">Description</label>
-              <textarea id="editTxDescription" rows="3" placeholder="Description"></textarea>
+              <input id="editTxDescription" type="text" list="txDescriptionList" placeholder="Description" autocomplete="off" />
             </div>
             <div class="field full">
               <label for="editTxBill">Replace Bill (optional)</label>
@@ -399,7 +399,7 @@
           </div>
           <div class="field full">
             <label for="txDescription">Description</label>
-            <textarea id="txDescription" name="description" placeholder="Bill / receipt / payment detail"></textarea>
+            <input id="txDescription" name="description" type="text" list="txDescriptionList" placeholder="Bill / receipt / payment detail" autocomplete="off" />
           </div>
           <div class="field">
             <label for="txCurrency">Currency</label>
@@ -452,6 +452,7 @@
   <datalist id="txCategoryList"><option value="Administrative expenses"></option></datalist>
   <datalist id="filterCategoryList"><option value="Administrative expenses"></option></datalist>
   <datalist id="filterOwnerList"></datalist>
+  <datalist id="txDescriptionList"></datalist>
 
   <!-- ── FAB ──────────────────────────────────────── -->
   <button class="fab-add-project" id="fabAddProject" title="New Project" aria-label="Add New Project">

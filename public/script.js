@@ -116,6 +116,7 @@ const kpiProfit = $("kpiProfit");
 // Datalists
 const projectCategoryList = $("projectCategoryList");
 const txCategoryList = $("txCategoryList");
+const txDescriptionList = $("txDescriptionList");
 const filterCategoryList = $("filterCategoryList");
 const filterOwnerList = $("filterOwnerList");
 
@@ -317,10 +318,15 @@ function refreshDatalists(projects) {
       .filter(Boolean),
   ];
 
+  const txDescriptions = projects
+    .flatMap((item) => (item.transactions || []).map((tx) => tx.description))
+    .filter(Boolean);
+
   buildDatalist(projectCategoryList, projectCategories, DEFAULT_PROJECT_CATEGORIES);
   buildDatalist(filterCategoryList, projectCategories, DEFAULT_PROJECT_CATEGORIES);
   buildDatalist(filterOwnerList, owners);
   buildDatalist(txCategoryList, txCategories, DEFAULT_TX_CATEGORIES);
+  buildDatalist(txDescriptionList, txDescriptions);
 }
 
 function calcTotalWithVat(total, vat) {
