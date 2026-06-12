@@ -1228,6 +1228,10 @@ async function submitProjectForm(event) {
   if (companyLogo.files?.[0]) {
     formData.append("companyLogo", companyLogo.files[0]);
   }
+  const quotationPdfInput = document.getElementById("quotationPdf");
+  if (quotationPdfInput?.files?.[0]) {
+    formData.append("quotationPdf", quotationPdfInput.files[0]);
+  }
 
   const isEdit = Boolean(editId.value.trim());
   const url = isEdit ? `/api/projects/${editId.value.trim()}` : "/api/projects";
