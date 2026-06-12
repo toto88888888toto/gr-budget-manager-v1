@@ -213,7 +213,7 @@ async function uploadQuotationToDrive(filePath, projectCode, projectName) {
     }
     await drive.permissions.create({ fileId, requestBody: { role: 'reader', type: 'anyone' } });
     console.log('[Drive] Uploaded quotation:', fileName);
-    return `https://lh3.googleusercontent.com/d/${fileId}`;
+    return `https://drive.google.com/file/d/${fileId}/view`;
   } catch (err) {
     console.error('[Drive] Quotation upload failed:', err.message);
     return null;
