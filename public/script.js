@@ -239,13 +239,9 @@ function getCurrencySymbol(currency) {
 }
 
 function formatDisplayNumber(value) {
-  const num = toNumber(value);
-  const abs = Math.abs(num);
-  const sign = num < 0 ? "-" : "";
-  if (abs >= 1000000000) return sign + new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(abs / 1000000000) + "B";
-  if (abs >= 1000000) return sign + new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(abs / 1000000) + "M";
-  if (abs >= 1000) return sign + new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(abs / 1000) + "K";
-  return sign + new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(abs);
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+  }).format(toNumber(value));
 }
 
 function formatMoney(value, currency = "") {
