@@ -83,6 +83,19 @@
         </div>
       </div>
 
+      <!-- ── CATEGORY BREAKDOWN ──────────────────── -->
+      <div class="panel" id="categoryBreakdownPanel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Category Breakdown</div>
+            <div class="panel-sub">Total spent per transaction category — click to see details</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="categoryBreakdownGrid" class="cat-grid"></div>
+        </div>
+      </div>
+
       <!-- ── PROJECTS PANEL ───────────────────────── -->
       <div class="panel">
         <div class="panel-header">
@@ -127,6 +140,23 @@
 
     </div>
   </main>
+
+  <!-- ── CATEGORY DETAIL MODAL ───────────────────────── -->
+  <div id="categoryModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" id="categoryModalBackdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <div>
+          <h3 id="categoryModalTitle">Category</h3>
+          <p id="categoryModalSub"></p>
+        </div>
+        <button type="button" class="modal-close" id="closeCategoryModal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="categoryModalBody"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- ── PROJECT DETAIL MODAL ─────────────────────────── -->
   <div id="projectModal" class="modal hidden" aria-hidden="true">

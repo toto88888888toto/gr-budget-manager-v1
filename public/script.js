@@ -424,7 +424,105 @@ function updateKPIs(projects) {
     kpiProfit.textContent = formatDisplayNumber(total.profit);
     kpiProfit.style.color = total.profit >= 0 ? "" : "#dc2626";
   }
+  buildCategoryBreakdown(projects);
 }
+
+// ── CATEGORY BREAKDOWN ─────────────────────────────────────────
+function buildCategoryBreakdown(projects) {
+  const grid = document.getElementById("categoryBreakdownGrid");
+  if (!grid) return;
+
+  // Aggregate all transactions by category
+  const map = {};
+  for (const project of projects) {
+    for (const tx of (project.transactions || [])) {
+      const cat = tx.category || "Uncategorized";
+      if (!map[cat]) map[cat] = { total: 0, income: 0, investment: 0, expense: 0, txs: [] };
+      const amt = toNumber(tx.amount);
+      map[cat].total += amt;
+      if (tx.type === "income")      map[cat].income     += amt;
+      if (tx.type === "investment")  map[cat].investment += amt;
+      if (tx.type === "expense")     map[cat].expense    += amt;
+      map[cat].txs.push({ ...tx, _projectName: project.name, _projectCode: project.projectCode });
+    }
+  }
+
+  const sorted = Object.entries(map).sort((a, b) => b[1].total - a[1].total);
+
+  if (sorted.length === 0) {
+    grid.innerHTML = '<p style="color:var(--muted);font-size:13px;">No transaction categories yet.</p>';
+    return;
+  }
+
+  grid.innerHTML = sorted.map(([cat, data]) => `
+    <div class="cat-card" data-cat="${escapeHtml(cat)}">
+      <div class="cat-name">${escapeHtml(cat)}</div>
+      <div class="cat-total">${formatDisplayNumber(data.total)}</div>
+      <div class="cat-breakdown">
+        ${data.income     ? `<span class="cat-tag income">In: ${formatDisplayNumber(data.income)}</span>` : ""}
+        ${data.investment ? `<span class="cat-tag invest">Inv: ${formatDisplayNumber(data.investment)}</span>` : ""}
+        ${data.expense    ? `<span class="cat-tag expense">Exp: ${formatDisplayNumber(data.expense)}</span>` : ""}
+      </div>
+      <div class="cat-count">${data.txs.length} transaction${data.txs.length !== 1 ? "s" : ""}</div>
+    </div>
+  `).join("");
+
+  // Click → open detail modal
+  grid.querySelectorAll(".cat-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const cat = card.dataset.cat;
+      const data = map[cat];
+      openCategoryModal(cat, data);
+    });
+  });
+}
+
+function openCategoryModal(cat, data) {
+  const modal = document.getElementById("categoryModal");
+  const title = document.getElementById("categoryModalTitle");
+  const sub   = document.getElementById("categoryModalSub");
+  const body  = document.getElementById("categoryModalBody");
+
+  title.textContent = cat;
+  sub.textContent   = `${data.txs.length} transaction${data.txs.length !== 1 ? "s" : ""} · Total: ${formatDisplayNumber(data.total)}`;
+
+  body.innerHTML = `
+    <table class="cat-table">
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th style="text-align:right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.txs.map(tx => `
+          <tr>
+            <td><span class="cat-proj-code">${escapeHtml(tx._projectCode || "")}</span> ${escapeHtml(tx._projectName || "")}</td>
+            <td><span class="cat-type-badge ${tx.type}">${escapeHtml(tx.type || "")}</span></td>
+            <td>${escapeHtml(tx.description || "-")}</td>
+            <td style="text-align:right;font-weight:600">${formatDisplayNumber(tx.amount)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+document.getElementById("closeCategoryModal")?.addEventListener("click", closeCategoryModal);
+document.getElementById("categoryModalBackdrop")?.addEventListener("click", closeCategoryModal);
+function closeCategoryModal() {
+  const modal = document.getElementById("categoryModal");
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+}
+
 
 async function loadNextProjectCode() {
   const data = await fetchJSON("/api/next-project-code");

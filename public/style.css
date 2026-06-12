@@ -1116,3 +1116,84 @@ body.dark .status-on_hold {
   .avatar-preview { width: 72px; height: 72px; border-radius: 12px; }
   .field-row { grid-template-columns: 1fr; }
 }
+
+/* ── CATEGORY BREAKDOWN ─────────────────────────────── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.cat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: box-shadow .15s, transform .15s;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.cat-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+.cat-name {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cat-total {
+  font-size: 20px; font-weight: 800;
+  color: var(--text); letter-spacing: -0.02em;
+  word-break: break-all;
+}
+
+.cat-breakdown {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-top: 2px;
+}
+
+.cat-tag {
+  font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 20px;
+}
+.cat-tag.income  { background: var(--success-bg);     color: var(--success); }
+.cat-tag.invest  { background: var(--investment-bg);  color: var(--investment); }
+.cat-tag.expense { background: var(--expense-bg);     color: var(--expense); }
+
+.cat-count {
+  font-size: 11px; color: var(--muted); margin-top: 2px;
+}
+
+/* Category detail table */
+.cat-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.cat-table th {
+  font-size: 11px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.cat-table td {
+  padding: 10px 10px; border-bottom: 1px solid var(--border);
+  color: var(--text); vertical-align: middle;
+}
+.cat-table tr:last-child td { border-bottom: none; }
+.cat-table tr:hover td { background: var(--surface-2); }
+
+.cat-proj-code {
+  font-size: 10px; font-weight: 700; color: var(--muted);
+  background: var(--surface-2); padding: 1px 5px;
+  border-radius: 4px; margin-right: 4px;
+}
+
+.cat-type-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 20px; text-transform: capitalize;
+}
+.cat-type-badge.income     { background: var(--success-bg);    color: var(--success); }
+.cat-type-badge.investment { background: var(--investment-bg); color: var(--investment); }
+.cat-type-badge.expense    { background: var(--expense-bg);    color: var(--expense); }
