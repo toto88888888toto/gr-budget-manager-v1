@@ -1637,21 +1637,20 @@ function buildAdminExpenses(projects) {
   const totalEl = document.getElementById("adminExpensesTotal");
   if (!grid) return;
 
-  // Collect all "Administrative expenses" transactions across all projects
+  // Collect all transactions from "Administrative expenses" projects
   const txs = [];
   for (const project of projects) {
+    if ((project.category || "").toLowerCase() !== "administrative expenses") continue;
     for (const tx of (project.transactions || [])) {
-      if ((tx.category || "").toLowerCase() === "administrative expenses") {
-        txs.push({ ...tx, _projectName: project.name, _projectCode: project.projectCode });
-      }
+      txs.push({ ...tx, _projectName: project.projectName, _projectCode: project.projectCode });
     }
   }
 
-  // Group by description
+  // Group by category
   const map = {};
   let grandTotal = 0;
   for (const tx of txs) {
-    const key = (tx.description || "Uncategorized").trim();
+    const key = (tx.category || "Uncategorized").trim();
     if (!map[key]) map[key] = { total: 0, count: 0, txs: [] };
     map[key].total += toNumber(tx.amount);
     map[key].count++;
@@ -1678,7 +1677,7 @@ function buildAdminExpenses(projects) {
     </div>
   `).join("");
 
-  // Click to show transactions for this description
+  // Click to show transactions for this category
   grid.querySelectorAll(".admin-exp-card").forEach(card => {
     card.addEventListener("click", () => {
       const desc = card.dataset.desc;
