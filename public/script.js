@@ -524,6 +524,62 @@ function closeCategoryModal() {
 }
 
 
+// ── BILL POPUP ─────────────────────────────────────────────────
+function openBillPopup(url) {
+  let modal = document.getElementById("billPopupModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "billPopupModal";
+    modal.className = "modal";
+    modal.innerHTML = `
+      <div class="modal-backdrop" id="billPopupBackdrop"></div>
+      <div class="modal-dialog bill-popup-dialog" role="dialog">
+        <div class="modal-header">
+          <h3>Bill / Receipt</h3>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <a id="billPopupDownload" class="btn btn-sm" download>Download</a>
+            <button type="button" class="modal-close" id="closeBillPopup">✕</button>
+          </div>
+        </div>
+        <div class="modal-body bill-popup-body" id="billPopupBody"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById("closeBillPopup").addEventListener("click", closeBillPopup);
+    document.getElementById("billPopupBackdrop").addEventListener("click", closeBillPopup);
+  }
+
+  const body = document.getElementById("billPopupBody");
+  const dl   = document.getElementById("billPopupDownload");
+  dl.href = url;
+  const ext = url.split("?")[0].split(".").pop().toLowerCase();
+  const isImage = ["jpg","jpeg","png","gif","webp","bmp"].includes(ext);
+  const isPdf   = ext === "pdf";
+
+  if (isImage) {
+    body.innerHTML = `<img src="${url}" alt="Bill" style="max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:8px;" />`;
+  } else if (isPdf) {
+    body.innerHTML = `<iframe src="${url}" style="width:100%;height:70vh;border:none;border-radius:8px;"></iframe>`;
+  } else {
+    body.innerHTML = `<div style="text-align:center;padding:40px 0;">
+      <p style="color:var(--muted);margin-bottom:16px;">Preview not available for this file type.</p>
+      <a href="${url}" download class="btn btn-primary">Download File</a>
+    </div>`;
+  }
+
+  modal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function closeBillPopup() {
+  const modal = document.getElementById("billPopupModal");
+  if (modal) {
+    modal.classList.add("hidden");
+    document.body.classList.remove("modal-open");
+  }
+}
+
+
 async function loadNextProjectCode() {
   const data = await fetchJSON("/api/next-project-code");
   projectNo.value = data.no || "";
@@ -859,7 +915,7 @@ function renderHistoryList(container, countEl, project = null) {
 
   container.innerHTML = transactions.map((tx) => {
     const fileLink = tx.billPath
-      ? `<a href="${tx.billPath}" target="_blank" rel="noopener">Open Bill</a>`
+      ? `<button class="btn btn-sm" onclick="openBillPopup('${tx.billPath}')" type="button">View Bill</button>`
       : `<span style="color:#94a3b8;">No file</span>`;
 
     return `

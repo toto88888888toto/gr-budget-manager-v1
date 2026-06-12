@@ -1197,3 +1197,16 @@ body.dark .status-on_hold {
 .cat-type-badge.income     { background: var(--success-bg);    color: var(--success); }
 .cat-type-badge.investment { background: var(--investment-bg); color: var(--investment); }
 .cat-type-badge.expense    { background: var(--expense-bg);    color: var(--expense); }
+
+/* ── BILL POPUP ─────────────────────────────────────── */
+.bill-popup-dialog {
+  width: min(860px, 96%);
+  max-height: 92vh;
+}
+.bill-popup-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: auto;
+}
