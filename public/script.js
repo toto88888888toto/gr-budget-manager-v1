@@ -303,6 +303,78 @@ function buildDatalist(listEl, values, pinnedValues = []) {
     .join("");
 }
 
+// ── CUSTOM AUTOCOMPLETE ───────────────────────────────
+let _acCategories = [];
+let _acDescriptions = [];
+
+function setupAutocomplete(inputEl, getValues) {
+  if (!inputEl) return;
+  // Wrap in relative div if not already
+  const parent = inputEl.parentElement;
+  if (!parent.classList.contains('autocomplete-wrap')) {
+    parent.classList.add('autocomplete-wrap');
+  }
+
+  let listEl = null;
+
+  function showList(items) {
+    removeList();
+    if (!items.length) return;
+    listEl = document.createElement('div');
+    listEl.className = 'autocomplete-list';
+    items.forEach((val, i) => {
+      const item = document.createElement('div');
+      item.className = 'ac-item';
+      item.textContent = val;
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        inputEl.value = val;
+        inputEl.dispatchEvent(new Event('input'));
+        removeList();
+      });
+      listEl.appendChild(item);
+    });
+    parent.appendChild(listEl);
+  }
+
+  function removeList() {
+    if (listEl) { listEl.remove(); listEl = null; }
+  }
+
+  inputEl.addEventListener('input', () => {
+    const q = inputEl.value.trim().toLowerCase();
+    const all = getValues();
+    const matches = q
+      ? all.filter(v => v.toLowerCase().includes(q) && v.toLowerCase() !== q)
+      : all.slice(0, 8);
+    showList(matches.slice(0, 10));
+  });
+
+  inputEl.addEventListener('focus', () => {
+    const q = inputEl.value.trim().toLowerCase();
+    const all = getValues();
+    const matches = q
+      ? all.filter(v => v.toLowerCase().includes(q))
+      : all.slice(0, 8);
+    showList(matches.slice(0, 10));
+  });
+
+  inputEl.addEventListener('blur', () => setTimeout(removeList, 150));
+}
+
+function initAutocompletes() {
+  const catInputs = [
+    document.getElementById('txCategory'),
+    document.getElementById('editTxCategory')
+  ];
+  const descInputs = [
+    document.getElementById('txDescription'),
+    document.getElementById('editTxDescription')
+  ];
+  catInputs.forEach(el => setupAutocomplete(el, () => _acCategories));
+  descInputs.forEach(el => setupAutocomplete(el, () => _acDescriptions));
+}
+
 function refreshDatalists(projects) {
   const projectCategories = [
     ...DEFAULT_PROJECT_CATEGORIES,
@@ -327,6 +399,15 @@ function refreshDatalists(projects) {
   buildDatalist(filterOwnerList, owners);
   buildDatalist(txCategoryList, txCategories, DEFAULT_TX_CATEGORIES);
   buildDatalist(txDescriptionList, txDescriptions);
+
+  // Update globals for custom autocomplete
+  _acCategories = [...new Set([
+    ...DEFAULT_TX_CATEGORIES,
+    ...projects.flatMap(p => (p.transactions || []).map(tx => tx.category)).filter(Boolean)
+  ])];
+  _acDescriptions = [...new Set(
+    projects.flatMap(p => (p.transactions || []).map(tx => tx.description)).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b));
 }
 
 function calcTotalWithVat(total, vat) {
@@ -1471,6 +1552,7 @@ async function init() {
   closeProjectModal();
   updateProjectPricePreview();
   await loadProjects(true);
+  initAutocompletes();
 }
 
 init().catch((error) => {
