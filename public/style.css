@@ -1293,3 +1293,42 @@ body.dark .status-on_hold {
   font-size: 13px;
   color: var(--text-2);
 }
+
+/* ── ADMIN EXPENSES PANEL ──────────────────────────── */
+.admin-total-badge {
+  font-size: 12px; font-weight: 600;
+  color: var(--muted);
+}
+
+.admin-exp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.admin-exp-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: box-shadow .15s, transform .15s;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.admin-exp-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+.admin-exp-desc {
+  font-size: 12px; font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.admin-exp-amount {
+  font-size: 18px; font-weight: 800;
+  color: var(--expense);
+  letter-spacing: -0.02em;
+}
+.admin-exp-count {
+  font-size: 11px; color: var(--muted);
+}

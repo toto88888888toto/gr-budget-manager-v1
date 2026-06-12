@@ -428,6 +428,7 @@ function updateKPIs(projects) {
     kpiProfit.style.color = total.profit >= 0 ? "" : "#dc2626";
   }
   buildCategoryBreakdown(projects);
+  buildAdminExpenses(projects);
 }
 
 // ── CATEGORY BREAKDOWN ─────────────────────────────────────────
@@ -1629,3 +1630,70 @@ init().catch((error) => {
     document.body.classList.add("modal-open");
   }
 })();
+
+// ── ADMINISTRATIVE EXPENSES PANEL ─────────────────────────────
+function buildAdminExpenses(projects) {
+  const grid    = document.getElementById("adminExpensesGrid");
+  const totalEl = document.getElementById("adminExpensesTotal");
+  if (!grid) return;
+
+  // Collect all "Administrative expenses" transactions across all projects
+  const txs = [];
+  for (const project of projects) {
+    for (const tx of (project.transactions || [])) {
+      if ((tx.category || "").toLowerCase() === "administrative expenses") {
+        txs.push({ ...tx, _projectName: project.name, _projectCode: project.projectCode });
+      }
+    }
+  }
+
+  // Group by description
+  const map = {};
+  let grandTotal = 0;
+  for (const tx of txs) {
+    const key = (tx.description || "Uncategorized").trim();
+    if (!map[key]) map[key] = { total: 0, count: 0, txs: [] };
+    map[key].total += toNumber(tx.amount);
+    map[key].count++;
+    map[key].txs.push(tx);
+    grandTotal += toNumber(tx.amount);
+  }
+
+  totalEl.textContent = txs.length
+    ? `Total: ${formatDisplayNumber(grandTotal)} LAK (${txs.length} tx)`
+    : "";
+
+  if (!txs.length) {
+    grid.innerHTML = '<p style="color:var(--muted);font-size:13px;">No administrative expenses yet.</p>';
+    return;
+  }
+
+  const sorted = Object.entries(map).sort((a, b) => b[1].total - a[1].total);
+
+  grid.innerHTML = sorted.map(([desc, data]) => `
+    <div class="admin-exp-card" data-desc="${escapeHtml(desc)}">
+      <div class="admin-exp-desc">${escapeHtml(desc)}</div>
+      <div class="admin-exp-amount">${formatDisplayNumber(data.total)}</div>
+      <div class="admin-exp-count">${data.count} payment${data.count !== 1 ? "s" : ""}</div>
+    </div>
+  `).join("");
+
+  // Click to show transactions for this description
+  grid.querySelectorAll(".admin-exp-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const desc = card.dataset.desc;
+      const data = map[desc];
+      openCategoryModal(desc, {
+        total: data.total,
+        txs: data.txs.map(tx => ({ ...tx, billPath: tx.billPath || "" }))
+      });
+    });
+  });
+}
+
+// Toggle show/hide
+document.getElementById("adminExpensesToggle")?.addEventListener("click", function () {
+  const body = document.getElementById("adminExpensesBody");
+  const hidden = body.classList.toggle("hidden");
+  this.textContent = hidden ? "Show ▾" : "Hide ▴";
+});

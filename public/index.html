@@ -88,6 +88,23 @@
         </div>
       </div>
 
+      <!-- ── ADMIN EXPENSES PANEL ─────────────────── -->
+      <div class="panel" id="adminExpensesPanel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Administrative Expenses</div>
+            <div class="panel-sub">Company payments — Gas, delivery, fees, etc.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="admin-total-badge" id="adminExpensesTotal"></span>
+            <button class="btn btn-sm" id="adminExpensesToggle" type="button">Show ▾</button>
+          </div>
+        </div>
+        <div class="panel-body hidden" id="adminExpensesBody">
+          <div id="adminExpensesGrid" class="admin-exp-grid"></div>
+        </div>
+      </div>
+
       <!-- ── CATEGORY BREAKDOWN ──────────────────── -->
       <div class="panel" id="categoryBreakdownPanel">
         <div class="panel-header">
