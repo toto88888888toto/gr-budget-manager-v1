@@ -1540,3 +1540,92 @@ init().catch((error) => {
     if (btn) openEditTx(btn.dataset.id);
   });
 })();
+
+// ── GLOBAL SEARCH ──────────────────────────────────────────────
+(function () {
+  const input   = document.getElementById("globalSearch");
+  const clearBtn = document.getElementById("globalSearchClear");
+  const modal   = document.getElementById("globalSearchModal");
+  const results = document.getElementById("globalSearchResults");
+  const countEl = document.getElementById("globalSearchResultCount");
+
+  if (!input) return;
+
+  let debounce;
+  input.addEventListener("input", () => {
+    clearTimeout(debounce);
+    const q = input.value.trim();
+    clearBtn.classList.toggle("hidden", !q);
+    if (!q) { closeSearch(); return; }
+    debounce = setTimeout(() => runSearch(q), 200);
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { closeSearch(); input.blur(); }
+  });
+
+  clearBtn.addEventListener("click", () => {
+    input.value = "";
+    clearBtn.classList.add("hidden");
+    closeSearch();
+  });
+
+  document.getElementById("closeGlobalSearch")?.addEventListener("click", closeSearch);
+  document.getElementById("globalSearchBackdrop")?.addEventListener("click", closeSearch);
+
+  function closeSearch() {
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+    const anyOpen = document.querySelector('.modal:not(#globalSearchModal):not(.hidden)');
+    if (!anyOpen) document.body.classList.remove("modal-open");
+  }
+
+  function runSearch(q) {
+    const lower = q.toLowerCase();
+    const hits = [];
+
+    for (const project of allProjects) {
+      for (const tx of (project.transactions || [])) {
+        const fields = [
+          tx.description, tx.category, tx.type,
+          String(tx.amount || ""), tx.date, tx.no,
+          project.name, project.projectCode
+        ];
+        if (fields.some(f => String(f || "").toLowerCase().includes(lower))) {
+          hits.push({ tx, project });
+        }
+      }
+    }
+
+    countEl.textContent = `${hits.length} result${hits.length !== 1 ? "s" : ""} for "${q}"`;
+
+    if (!hits.length) {
+      results.innerHTML = `<p style="color:var(--muted);padding:20px 0;">No results found.</p>`;
+    } else {
+      results.innerHTML = hits.map(({ tx, project }) => `
+        <div class="gsearch-item">
+          <div class="gsearch-top">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span class="${getTypeBadgeClass(tx.type)}">${escapeHtml((tx.type||"").toUpperCase())}</span>
+              <strong>${formatMoney(tx.amount, tx.currency)}</strong>
+              <span class="cat-proj-code">${escapeHtml(project.projectCode||"")}</span>
+              <span style="font-size:13px;color:var(--muted)">${escapeHtml(project.name||"")}</span>
+            </div>
+            <span style="font-size:12px;color:var(--muted)">${escapeHtml(tx.date||"")}</span>
+          </div>
+          <div class="gsearch-meta">
+            <span><strong>Category:</strong> ${escapeHtml(tx.category||"-")}</span>
+            <span><strong>Description:</strong> ${escapeHtml(tx.description||"-")}</span>
+          </div>
+          ${tx.billPath
+            ? `<div style="margin-top:8px;"><button class="btn btn-sm" onclick="openBillPopup('${tx.billPath}')" type="button">View Bill</button></div>`
+            : ""}
+        </div>
+      `).join("");
+    }
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+})();
