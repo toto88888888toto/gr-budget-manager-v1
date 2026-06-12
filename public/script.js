@@ -1538,9 +1538,14 @@ function attachEvents() {
 
   editProjectBtn?.addEventListener("click", () => {
     const project = allProjects.find((item) => item.id === currentProjectId);
-    if (!project) return;
-    populateProjectForm(project);
-    closeProjectModal();
+    if (!project) { console.warn("Edit: no project found for id", currentProjectId); return; }
+    try {
+      populateProjectForm(project);
+      closeProjectModal();
+    } catch(e) {
+      console.error("Edit project error:", e);
+      showToast("Edit failed: " + e.message, "error");
+    }
   });
 
   openAddTxFromDetailBtn?.addEventListener("click", () => {
