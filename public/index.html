@@ -222,7 +222,11 @@
             </div>
             <div class="field full">
               <label for="editTxBill">Replace Bill (optional)</label>
-              <input id="editTxBill" type="file" accept="image/*,.pdf" />
+              <div class="drop-zone" id="editTxBillDrop">
+                <span class="drop-zone__text">Drag &amp; drop or <u>click to choose</u></span>
+                <span class="drop-zone__file"></span>
+                <input id="editTxBill" type="file" accept="image/*,.pdf" class="drop-zone__input" />
+              </div>
             </div>
           </div>
           <div class="form-actions">
@@ -424,7 +428,11 @@
           </div>
           <div class="field">
             <label for="billFile">Attach Bill</label>
-            <input id="billFile" name="billFile" type="file" />
+            <div class="drop-zone" id="billFileDrop">
+              <span class="drop-zone__text">Drag &amp; drop or <u>click to choose</u></span>
+              <span class="drop-zone__file"></span>
+              <input id="billFile" name="billFile" type="file" class="drop-zone__input" />
+            </div>
           </div>
         </div>
 

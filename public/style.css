@@ -1358,3 +1358,41 @@ body.dark .status-on_hold {
 .autocomplete-list .ac-item:last-child { border-bottom: none; }
 .autocomplete-list .ac-item:hover,
 .autocomplete-list .ac-item.active { background: var(--primary, #6366f1); color: #fff; }
+
+/* ── Drag & Drop Zone ─────────────────────────────────── */
+.drop-zone {
+  position: relative;
+  border: 2px dashed var(--border, #2a2f45);
+  border-radius: 10px;
+  padding: 18px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  background: transparent;
+}
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: var(--primary, #6366f1);
+  background: rgba(99,102,241,0.06);
+}
+.drop-zone__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.drop-zone__text {
+  font-size: 13px;
+  color: var(--muted, #94a3b8);
+  pointer-events: none;
+}
+.drop-zone__file {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary, #6366f1);
+  margin-top: 4px;
+  pointer-events: none;
+}

@@ -789,7 +789,7 @@ function resetTransactionForm(keepProject = true) {
   txAmount.value = "";
   txAmountRaw.value = "";
   txDate.value = todayISO();
-  billFile.value = "";
+  billFile.value = ""; const _bf = document.querySelector("#billFileDrop .drop-zone__file"); if(_bf) _bf.textContent="";
 
   if (!keepProject) {
     selectedProjectId.value = "";
@@ -1555,6 +1555,39 @@ async function init() {
   initAutocompletes();
 }
 
+// ── DRAG & DROP FILE ZONES ────────────────────────────
+function setupDropZone(zoneId) {
+  const zone = document.getElementById(zoneId);
+  if (!zone) return;
+  const input = zone.querySelector('.drop-zone__input');
+  const fileLabel = zone.querySelector('.drop-zone__file');
+  if (!input) return;
+
+  function updateLabel(file) {
+    if (fileLabel) fileLabel.textContent = file ? file.name : '';
+  }
+
+  input.addEventListener('change', () => updateLabel(input.files?.[0]));
+
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.classList.add('drag-over');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    updateLabel(file);
+  });
+}
+
+['billFileDrop', 'editTxBillDrop'].forEach(setupDropZone);
+
 init().catch((error) => {
   console.error(error);
   showToast(error.message || "Failed to load app", "error");
@@ -1576,7 +1609,7 @@ init().catch((error) => {
     document.getElementById("editTxCategory").value    = tx.category || "";
     document.getElementById("editTxDate").value        = tx.date || new Date().toISOString().slice(0, 10);
     document.getElementById("editTxDescription").value = tx.description || "";
-    document.getElementById("editTxBill").value        = "";
+    document.getElementById("editTxBill").value = ""; const _ef = document.querySelector("#editTxBillDrop .drop-zone__file"); if(_ef) _ef.textContent="";
 
     modal().classList.remove("hidden");
     modal().setAttribute("aria-hidden", "false");
