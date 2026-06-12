@@ -1224,7 +1224,7 @@ app.put('/api/transactions/:id', requireAuth, transactionUpload, async (req, res
     return res.status(result.status).json(result.body);
   } catch (error) {
     console.error('Cannot update transaction:', error);
-    return sendError(res, 'Cannot update transaction');
+    return sendError(res, 'Cannot update transaction: ' + error.message);
   }
 });
 
