@@ -1856,9 +1856,7 @@ document.getElementById("categoryBreakdownToggle")?.addEventListener("click", fu
   this.textContent = hidden ? "Show ▾" : "Hide ▴";
 });
 
-["adminDateFrom", "adminDateTo"].forEach(id => {
-  document.getElementById(id)?.addEventListener("change", () => buildAdminExpenses(allProjects));
-});
+document.getElementById("adminDateApply")?.addEventListener("click", () => buildAdminExpenses(allProjects));
 document.getElementById("adminDateClear")?.addEventListener("click", () => {
   const f = document.getElementById("adminDateFrom");
   const t = document.getElementById("adminDateTo");
