@@ -283,6 +283,9 @@
                 </div>
                 <h2 id="detailProjectName">Project Name</h2>
                 <p class="muted" id="detailProjectRemark" style="font-size:13px;"></p>
+                <div id="detailQuotationWrap" style="display:none;margin-top:4px;">
+                  <a id="detailQuotationLink" href="#" target="_blank" style="font-size:12px;color:var(--primary);">📄 View Quotation / Invoice</a>
+                </div>
                 <div class="detail-meta-grid">
                   <div class="meta-item">
                     <span class="meta-label">Start Date</span>
@@ -581,6 +584,18 @@
               <div class="field">
                 <label for="remark">Remark</label>
                 <textarea id="remark" name="remark" placeholder="Optional notes…" rows="2"></textarea>
+              </div>
+              <div class="field">
+                <label>Quotation / Invoice (PDF)</label>
+                <div class="drop-zone" id="quotationPdfDrop">
+                  <span class="drop-zone__text">Drag &amp; drop or <u>click to choose</u> — will be saved as <em>ProjectCode-ProjectName.pdf</em></span>
+                  <span class="drop-zone__file"></span>
+                  <input id="quotationPdf" name="quotationPdf" type="file" accept=".pdf,application/pdf" class="drop-zone__input" />
+                </div>
+                <div id="quotationPdfCurrentWrap" style="display:none;margin-top:6px;">
+                  <a id="quotationPdfCurrentLink" href="#" target="_blank" style="font-size:12px;color:var(--primary)">📄 View current PDF</a>
+                  <span style="font-size:11px;color:var(--muted);margin-left:6px;">(upload new to replace)</span>
+                </div>
               </div>
             </div>
           </div>

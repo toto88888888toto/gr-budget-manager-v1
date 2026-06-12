@@ -18,6 +18,7 @@ const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(ROOT_DIR, 'data');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const LOGO_DIR = path.join(UPLOAD_DIR, 'logos');
 const BILL_DIR = path.join(UPLOAD_DIR, 'bills');
+const PDF_DIR  = path.join(UPLOAD_DIR, 'pdfs');
 const EXCEL_FILE = path.join(DATA_DIR, 'budget.xlsx');
 
 const LOGIN_HTML = path.join(PUBLIC_DIR, 'login.html');
@@ -29,6 +30,7 @@ const DEFAULT_VAT_PERCENT = 10;
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+if (!fs.existsSync(PDF_DIR))    fs.mkdirSync(PDF_DIR, { recursive: true });
 if (!fs.existsSync(LOGO_DIR)) fs.mkdirSync(LOGO_DIR, { recursive: true });
 if (!fs.existsSync(BILL_DIR)) fs.mkdirSync(BILL_DIR, { recursive: true });
 
@@ -178,6 +180,42 @@ async function uploadImageToDrive(filePath, fileName) {
     return fileId;
   } catch (err) {
     console.error('[Drive] Image upload failed:', fileName, err.message);
+    return null;
+  }
+}
+
+
+let driveQuotationsFolderId = null;
+
+async function uploadQuotationToDrive(filePath, projectCode, projectName) {
+  if (!drive) return null;
+  try {
+    driveQuotationsFolderId = driveQuotationsFolderId || await getOrCreateSubfolder('quotations', DRIVE_FOLDER_ID);
+    if (!driveQuotationsFolderId) return null;
+    const safeName = (projectName || 'project').replace(/[^a-zA-Z0-9\s_-]/g, '').trim().slice(0, 80);
+    const fileName = `${projectCode || 'GB'}-${safeName}.pdf`;
+    const media = { mimeType: 'application/pdf', body: fs.createReadStream(filePath) };
+    // Remove old file with same name if exists
+    const existing = await drive.files.list({
+      q: `name='${fileName}' and '${driveQuotationsFolderId}' in parents and trashed=false`,
+      fields: 'files(id)', spaces: 'drive'
+    });
+    let fileId;
+    if (existing.data.files?.length > 0) {
+      fileId = existing.data.files[0].id;
+      await drive.files.update({ fileId, media });
+    } else {
+      const created = await drive.files.create({
+        requestBody: { name: fileName, parents: [driveQuotationsFolderId] },
+        media
+      });
+      fileId = created.data.id;
+    }
+    await drive.permissions.create({ fileId, requestBody: { role: 'reader', type: 'anyone' } });
+    console.log('[Drive] Uploaded quotation:', fileName);
+    return `https://lh3.googleusercontent.com/d/${fileId}`;
+  } catch (err) {
+    console.error('[Drive] Quotation upload failed:', err.message);
     return null;
   }
 }
@@ -387,6 +425,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     if (file.fieldname === 'companyLogo') return cb(null, LOGO_DIR);
     if (file.fieldname === 'billFile') return cb(null, BILL_DIR);
+    if (file.fieldname === 'quotationPdf') return cb(null, PDF_DIR);
     cb(null, UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
@@ -405,7 +444,7 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024, files: 10 }
 });
 
-const projectUpload = upload.fields([{ name: 'companyLogo', maxCount: 1 }]);
+const projectUpload = upload.fields([{ name: 'companyLogo', maxCount: 1 }, { name: 'quotationPdf', maxCount: 1 }]);
 const transactionUpload = upload.fields([{ name: 'billFile', maxCount: 1 }]);
 
 const PROJECT_HEADERS = [
@@ -520,6 +559,7 @@ function rowToProject(row) {
     status: normalizeStatus(values[16]),
     createdAt: toText(values[17]),
     updatedAt: toText(values[18]),
+    quotationPath: toText(values[19]),
     _rowNumber: row.number
   };
 }
@@ -582,7 +622,8 @@ function projectToRow(project) {
     toNumber(project.profit),
     normalizeStatus(project.status),
     toText(project.createdAt),
-    toText(project.updatedAt)
+    toText(project.updatedAt),
+    toText(project.quotationPath || '')
   ];
 }
 
@@ -703,7 +744,7 @@ function calculateProjectNumbers(project, transactions) {
   };
 }
 
-function projectPayload(body, existing, req, projects, transactions, resolvedLogoPath) {
+function projectPayload(body, existing, req, projects, transactions, resolvedLogoPath, resolvedQuotationPath) {
   const uploadedLogo = resolvedLogoPath !== undefined ? resolvedLogoPath : publicPathFromFile(req.files?.companyLogo?.[0]);
 
   const totalPrice = toNumber(body.totalPrice ?? existing?.totalPrice);
@@ -727,6 +768,7 @@ function projectPayload(body, existing, req, projects, transactions, resolvedLog
     endDate: normalizeDate(body.endDate ?? existing?.endDate),
     remark: toText(body.remark ?? existing?.remark),
     logoPath: uploadedLogo || toText(body.keepLogoPath ?? existing?.logoPath),
+    quotationPath: resolvedQuotationPath !== undefined ? resolvedQuotationPath : toText(existing?.quotationPath || ''),
     contractCurrency: toText(body.contractCurrency ?? existing?.contractCurrency ?? 'LAK').toUpperCase(),
     status: normalizeStatus(body.status ?? existing?.status ?? 'draft'),
     totalPrice,
@@ -960,13 +1002,15 @@ app.get('/api/next-project-code', requireAuth, async (req, res) => {
 app.post('/api/projects', requireAuth, projectUpload, async (req, res) => {
   try {
     const resolvedLogoPath = await resolveFilePath(req.files?.companyLogo?.[0]);
+    const pdfFile = req.files?.quotationPdf?.[0];
     const result = await queueWrite(async () => {
       const { workbook, projectSheet, transactionSheet } = await openWorkbook();
-
       const projects = readProjects(projectSheet);
       const transactions = readTransactions(transactionSheet);
-
-      const project = projectPayload(req.body, null, req, projects, transactions, resolvedLogoPath);
+      // Resolve quotation after we know the project code
+      const tempProject = projectPayload(req.body, null, req, projects, transactions, resolvedLogoPath, undefined);
+      const resolvedQuotationPath = pdfFile ? (await uploadQuotationToDrive(pdfFile.path, tempProject.projectCode, tempProject.projectName)) || '' : '';
+      const project = projectPayload(req.body, null, req, projects, transactions, resolvedLogoPath, resolvedQuotationPath || tempProject.quotationPath);
       const validation = validateProject(project);
       if (validation) {
         return { status: 400, body: { ok: false, error: validation } };
@@ -991,18 +1035,17 @@ app.post('/api/projects', requireAuth, projectUpload, async (req, res) => {
 app.put('/api/projects/:id', requireAuth, projectUpload, async (req, res) => {
   try {
     const resolvedLogoPath = await resolveFilePath(req.files?.companyLogo?.[0]);
+    const pdfFile = req.files?.quotationPdf?.[0];
     const result = await queueWrite(async () => {
       const { workbook, projectSheet, transactionSheet } = await openWorkbook();
-
       const projects = readProjects(projectSheet);
       const transactions = readTransactions(transactionSheet);
-
       const existing = projects.find((item) => item.id === req.params.id);
       if (!existing) {
         return { status: 404, body: { ok: false, error: 'Project not found' } };
       }
-
-      const updated = projectPayload(req.body, existing, req, projects, transactions, resolvedLogoPath);
+      const resolvedQuotationPath = pdfFile ? (await uploadQuotationToDrive(pdfFile.path, existing.projectCode, req.body.projectName || existing.projectName)) || existing.quotationPath : existing.quotationPath;
+      const updated = projectPayload(req.body, existing, req, projects, transactions, resolvedLogoPath, resolvedQuotationPath);
 
       updated.id = existing.id;
       updated.no = existing.no;

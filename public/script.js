@@ -773,6 +773,9 @@ function resetProjectForm() {
   totalPriceWithVatDisplay.value = "";
   saveBtn.textContent = "Save Project";
   clearLogoPreview();
+  const _qcwr = $("quotationPdfCurrentWrap");
+  if (_qcwr) _qcwr.style.display = "none";
+  const _qpf = document.querySelector("#quotationPdfDrop .drop-zone__file"); if(_qpf) _qpf.textContent="";
   loadNextProjectCode().catch(console.error);
 }
 
@@ -816,6 +819,17 @@ function populateProjectForm(project) {
   saveBtn.textContent = "Update Project";
   showLogoPreview(project.logoPath || "");
   updateProjectPricePreview();
+  // Show existing quotation link
+  const _qcw = $("quotationPdfCurrentWrap");
+  const _qcl = $("quotationPdfCurrentLink");
+  if (_qcw && _qcl) {
+    if (project.quotationPath) {
+      _qcl.href = project.quotationPath;
+      _qcw.style.display = "";
+    } else {
+      _qcw.style.display = "none";
+    }
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1085,6 +1099,14 @@ function fillProjectModal(project = null) {
   detailProjectOwner.textContent = currentProject.owner || "-";
   detailProjectName.textContent = currentProject.projectName || "-";
   detailProjectRemark.textContent = getProjectRemarkText(currentProject);
+  const _qw = $("detailQuotationWrap");
+  const _ql = $("detailQuotationLink");
+  if (_qw && _ql && currentProject.quotationPath) {
+    _ql.href = currentProject.quotationPath;
+    _qw.style.display = "";
+  } else if (_qw) {
+    _qw.style.display = "none";
+  }
   detailStartDate.textContent = currentProject.startDate || "-";
   detailEndDate.textContent = currentProject.endDate || "-";
   detailCurrency.textContent = currency;
@@ -1586,7 +1608,7 @@ function setupDropZone(zoneId) {
   });
 }
 
-['billFileDrop', 'editTxBillDrop'].forEach(setupDropZone);
+['billFileDrop', 'editTxBillDrop', 'quotationPdfDrop'].forEach(setupDropZone);
 
 init().catch((error) => {
   console.error(error);
