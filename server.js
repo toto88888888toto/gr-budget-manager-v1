@@ -190,7 +190,7 @@ async function resolveFilePath(file) {
   try {
     const fileId = await uploadImageToDrive(file.path, file.filename);
     if (fileId) {
-      return `https://drive.google.com/uc?export=view&id=${fileId}`;
+      return `https://lh3.googleusercontent.com/d/${fileId}`;
     }
   } catch (err) {
     console.error('[Drive] resolveFilePath failed:', err.message);
