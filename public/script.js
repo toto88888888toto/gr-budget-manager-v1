@@ -239,9 +239,12 @@ function getCurrencySymbol(currency) {
 }
 
 function formatDisplayNumber(value) {
+  const num = toNumber(value);
+  const decimals = Number.isInteger(num) ? 0 : 2;
   return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 2,
-  }).format(toNumber(value));
+    minimumFractionDigits: 0,
+    maximumFractionDigits: decimals,
+  }).format(num);
 }
 
 function formatMoney(value, currency = "") {
@@ -494,6 +497,7 @@ function openCategoryModal(cat, data) {
           <th>Type</th>
           <th>Description</th>
           <th style="text-align:right">Amount</th>
+          <th style="text-align:center">Bill</th>
         </tr>
       </thead>
       <tbody>
@@ -503,6 +507,11 @@ function openCategoryModal(cat, data) {
             <td><span class="cat-type-badge ${tx.type}">${escapeHtml(tx.type || "")}</span></td>
             <td>${escapeHtml(tx.description || "-")}</td>
             <td style="text-align:right;font-weight:600">${formatDisplayNumber(tx.amount)}</td>
+            <td style="text-align:center">
+              ${tx.billPath
+                ? `<button class="btn btn-sm" onclick="openBillPopup('${tx.billPath}')" type="button">View Bill</button>`
+                : `<span style="color:var(--muted);font-size:12px;">—</span>`}
+            </td>
           </tr>
         `).join("")}
       </tbody>
