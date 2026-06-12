@@ -1779,6 +1779,12 @@ function buildAdminExpenses(projects) {
 }
 
 // Toggle show/hide
+document.getElementById("categoryBreakdownToggle")?.addEventListener("click", function () {
+  const body = document.getElementById("categoryBreakdownBody");
+  const hidden = body.classList.toggle("hidden");
+  this.textContent = hidden ? "Show ▾" : "Hide ▴";
+});
+
 document.getElementById("adminExpensesToggle")?.addEventListener("click", function () {
   const body = document.getElementById("adminExpensesBody");
   const hidden = body.classList.toggle("hidden");

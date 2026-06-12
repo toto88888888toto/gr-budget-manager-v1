@@ -112,11 +112,14 @@
             <div class="panel-title">Category Breakdown</div>
             <div class="panel-sub">Total spent per transaction category — click to see details</div>
           </div>
-          <div class="cat-search-wrap">
-            <input id="categorySearch" type="text" placeholder="Search categories…" autocomplete="off" />
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="cat-search-wrap">
+              <input id="categorySearch" type="text" placeholder="Search categories…" autocomplete="off" />
+            </div>
+            <button class="btn btn-sm" id="categoryBreakdownToggle" type="button">Hide ▴</button>
           </div>
         </div>
-        <div class="panel-body">
+        <div class="panel-body" id="categoryBreakdownBody">
           <div id="categoryBreakdownGrid" class="cat-grid"></div>
         </div>
       </div>
