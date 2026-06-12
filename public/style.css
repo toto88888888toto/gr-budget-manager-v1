@@ -1219,3 +1219,8 @@ body.dark .status-on_hold {
 .cat-search-wrap input {
   max-width: 320px;
 }
+
+/* ── STACKED MODAL Z-INDEX ─────────────────────────── */
+#editTxModal,
+#billPopupModal,
+#categoryModal { z-index: 1200; }

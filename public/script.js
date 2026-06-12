@@ -1497,7 +1497,9 @@ init().catch((error) => {
   function closeEditTx() {
     modal().classList.add("hidden");
     modal().setAttribute("aria-hidden", "true");
-    document.body.classList.remove("modal-open");
+    // Only unlock scroll if no other modal is open
+    const anyOpen = document.querySelector('.modal:not(.hidden)');
+    if (!anyOpen) document.body.classList.remove("modal-open");
   }
 
   document.getElementById("closeEditTxModal")?.addEventListener("click", closeEditTx);
