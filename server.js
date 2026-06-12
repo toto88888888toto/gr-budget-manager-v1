@@ -1141,6 +1141,66 @@ app.post('/api/projects/:id/transactions', requireAuth, transactionUpload, async
   }
 });
 
+
+app.put('/api/transactions/:id', requireAuth, transactionUpload, async (req, res) => {
+  try {
+    const result = await queueWrite(async () => {
+      const { workbook, projectSheet, transactionSheet } = await openWorkbook();
+      const { projects, transactions } = await getAllData();
+
+      const tx = transactions.find((item) => item.id === req.params.id);
+      if (!tx) return { status: 404, body: { ok: false, error: 'Transaction not found' } };
+
+      const project = projects.find((item) => item.id === tx.projectId);
+      if (!project) return { status: 404, body: { ok: false, error: 'Project not found' } };
+
+      // If new bill uploaded, remove old one
+      const newBillPath = publicPathFromFile(req.files?.billFile?.[0]);
+      if (newBillPath && tx.billPath) removePublicFile(tx.billPath);
+
+      const updated = {
+        ...tx,
+        type: toText(req.body.type || tx.type).toLowerCase(),
+        category: toText(req.body.category || tx.category),
+        description: toText(req.body.description ?? tx.description),
+        currency: toText(req.body.currency || tx.currency).toUpperCase(),
+        amount: req.body.amount !== undefined ? toNumber(req.body.amount) : tx.amount,
+        date: req.body.date ? normalizeDate(req.body.date) : tx.date,
+        billPath: newBillPath || tx.billPath,
+        updatedAt: new Date().toISOString()
+      };
+
+      const validation = validateTransaction(updated);
+      if (validation) return { status: 400, body: { ok: false, error: validation } };
+
+      const row = transactionSheet.getRow(tx._rowNumber);
+      const rowValues = transactionToRow(updated);
+      rowValues.forEach((val, i) => { row.getCell(i + 1).value = val; });
+      row.commit();
+
+      const allTx = transactions.map((t) => t.id === updated.id ? updated : t);
+      const updatedProject = syncProjectFinancials(projectSheet, project, allTx);
+
+      await saveWorkbook(workbook);
+
+      return {
+        status: 200,
+        body: {
+          ok: true,
+          transaction: updated,
+          project: buildProjectSummary(updatedProject, allTx)
+        }
+      };
+    });
+
+    scheduleImageUpload(req);
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error('Cannot update transaction:', error);
+    return sendError(res, 'Cannot update transaction');
+  }
+});
+
 app.delete('/api/transactions/:id', requireAuth, async (req, res) => {
   try {
     const result = await queueWrite(async () => {

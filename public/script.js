@@ -951,7 +951,10 @@ function renderHistoryList(container, countEl, project = null) {
             <span class="${getTypeBadgeClass(tx.type)}">${escapeHtml((tx.type || "").toUpperCase())}</span>
             <strong style="font-size:16px;">${formatMoney(tx.amount, tx.currency)}</strong>
           </div>
-          <button class="btn btn-danger btn-small" data-action="delete-tx" data-id="${tx.id}" type="button">Delete</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm" data-action="edit-tx" data-id="${tx.id}" type="button">Edit</button>
+            <button class="btn btn-danger btn-small" data-action="delete-tx" data-id="${tx.id}" type="button">Delete</button>
+          </div>
         </div>
 
         <div class="history-meta">
@@ -1467,3 +1470,71 @@ init().catch((error) => {
   console.error(error);
   showToast(error.message || "Failed to load app", "error");
 });
+// ── EDIT TRANSACTION MODAL ─────────────────────────────────────
+(function () {
+  const modal    = () => document.getElementById("editTxModal");
+  const form     = () => document.getElementById("editTxForm");
+
+  function openEditTx(txId) {
+    const project = allProjects.find(p => (p.transactions || []).find(t => t.id === txId));
+    if (!project) return;
+    const tx = project.transactions.find(t => t.id === txId);
+    if (!tx) return;
+
+    document.getElementById("editTxId").value          = tx.id;
+    document.getElementById("editTxType").value        = tx.type || "expense";
+    document.getElementById("editTxAmount").value      = tx.amount || "";
+    document.getElementById("editTxCategory").value    = tx.category || "";
+    document.getElementById("editTxDate").value        = tx.date || "";
+    document.getElementById("editTxDescription").value = tx.description || "";
+    document.getElementById("editTxBill").value        = "";
+
+    modal().classList.remove("hidden");
+    modal().setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeEditTx() {
+    modal().classList.add("hidden");
+    modal().setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+  }
+
+  document.getElementById("closeEditTxModal")?.addEventListener("click", closeEditTx);
+  document.getElementById("cancelEditTxBtn")?.addEventListener("click", closeEditTx);
+  document.getElementById("editTxModalBackdrop")?.addEventListener("click", closeEditTx);
+
+  document.getElementById("editTxForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id   = document.getElementById("editTxId").value;
+    const bill = document.getElementById("editTxBill").files?.[0];
+    const btn  = document.getElementById("saveEditTxBtn");
+
+    const fd = new FormData();
+    fd.append("type",        document.getElementById("editTxType").value);
+    fd.append("amount",      parseInputNumber(document.getElementById("editTxAmount").value));
+    fd.append("category",    document.getElementById("editTxCategory").value.trim());
+    fd.append("date",        document.getElementById("editTxDate").value);
+    fd.append("description", document.getElementById("editTxDescription").value.trim());
+    if (bill) fd.append("billFile", bill);
+
+    setButtonLoading(btn, true, "Save Changes", "Saving…");
+    try {
+      const res = await fetch(`/api/transactions/${id}`, { method: "PUT", body: fd });
+      const data = await res.json();
+      if (!data.ok) { alert(data.error || "Failed to save"); return; }
+      closeEditTx();
+      await loadProjects(true);
+    } catch (err) {
+      alert("Network error");
+    } finally {
+      setButtonLoading(btn, false, "Save Changes", "Saving…");
+    }
+  });
+
+  // Delegate click for edit-tx buttons
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="edit-tx"]');
+    if (btn) openEditTx(btn.dataset.id);
+  });
+})();

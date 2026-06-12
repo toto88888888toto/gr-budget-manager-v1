@@ -144,6 +144,56 @@
     </div>
   </main>
 
+  <!-- ── EDIT TRANSACTION MODAL ──────────────────────── -->
+  <div id="editTxModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" id="editTxModalBackdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3>Edit Transaction</h3>
+        <button type="button" class="modal-close" id="closeEditTxModal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="editTxForm" autocomplete="off">
+          <input type="hidden" id="editTxId" />
+          <div class="form-grid">
+            <div class="field">
+              <label for="editTxType">Type *</label>
+              <select id="editTxType">
+                <option value="income">Income</option>
+                <option value="investment">Investment</option>
+                <option value="expense">Expense</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="editTxAmount">Amount *</label>
+              <input id="editTxAmount" type="text" inputmode="decimal" placeholder="0" />
+            </div>
+            <div class="field">
+              <label for="editTxCategory">Category *</label>
+              <input id="editTxCategory" type="text" list="txCategoryList" placeholder="Category" />
+            </div>
+            <div class="field">
+              <label for="editTxDate">Date *</label>
+              <input id="editTxDate" type="date" />
+            </div>
+            <div class="field full">
+              <label for="editTxDescription">Description</label>
+              <textarea id="editTxDescription" rows="3" placeholder="Description"></textarea>
+            </div>
+            <div class="field full">
+              <label for="editTxBill">Replace Bill (optional)</label>
+              <input id="editTxBill" type="file" accept="image/*,.pdf" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn" id="cancelEditTxBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveEditTxBtn">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- ── CATEGORY DETAIL MODAL ───────────────────────── -->
   <div id="categoryModal" class="modal hidden" aria-hidden="true">
     <div class="modal-backdrop" id="categoryModalBackdrop"></div>
