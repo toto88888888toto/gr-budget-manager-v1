@@ -1214,11 +1214,13 @@ body.dark .status-on_hold {
 
 /* ── CATEGORY SEARCH ───────────────────────────────── */
 .cat-search-wrap {
-  margin-bottom: 16px;
+  flex: 1;
+  max-width: 320px;
 }
 .cat-search-wrap input {
   width: 100%;
   max-width: 100%;
+  margin-bottom: 0;
 }
 
 /* ── STACKED MODAL Z-INDEX ─────────────────────────── */
