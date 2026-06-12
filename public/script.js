@@ -819,6 +819,7 @@ function populateProjectForm(project) {
   saveBtn.textContent = "Update Project";
   showLogoPreview(project.logoPath || "");
   updateProjectPricePreview();
+  // (scroll handled by caller)
   // Show existing quotation link
   const _qcw = $("quotationPdfCurrentWrap");
   const _qcl = $("quotationPdfCurrentLink");
@@ -830,8 +831,8 @@ function populateProjectForm(project) {
       _qcw.style.display = "none";
     }
   }
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
 
 function getFilteredProjects() {
   const keyword = searchInput.value.trim().toLowerCase();
@@ -1542,6 +1543,7 @@ function attachEvents() {
     try {
       populateProjectForm(project);
       closeProjectModal();
+      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
     } catch(e) {
       console.error("Edit project error:", e);
       showToast("Edit failed: " + e.message, "error");
@@ -1789,11 +1791,16 @@ function buildAdminExpenses(projects) {
   const totalEl = document.getElementById("adminExpensesTotal");
   if (!grid) return;
 
+  const fromVal = document.getElementById("adminDateFrom")?.value || "";
+  const toVal   = document.getElementById("adminDateTo")?.value || "";
+
   // Collect all transactions from "Administrative expenses" projects
   const txs = [];
   for (const project of projects) {
     if ((project.category || "").toLowerCase() !== "administrative expenses") continue;
     for (const tx of (project.transactions || [])) {
+      if (fromVal && (tx.date || "") < fromVal) continue;
+      if (toVal   && (tx.date || "") > toVal)   continue;
       txs.push({ ...tx, _projectName: project.projectName, _projectCode: project.projectCode });
     }
   }
@@ -1847,6 +1854,17 @@ document.getElementById("categoryBreakdownToggle")?.addEventListener("click", fu
   const body = document.getElementById("categoryBreakdownBody");
   const hidden = body.classList.toggle("hidden");
   this.textContent = hidden ? "Show ▾" : "Hide ▴";
+});
+
+["adminDateFrom", "adminDateTo"].forEach(id => {
+  document.getElementById(id)?.addEventListener("change", () => buildAdminExpenses(allProjects));
+});
+document.getElementById("adminDateClear")?.addEventListener("click", () => {
+  const f = document.getElementById("adminDateFrom");
+  const t = document.getElementById("adminDateTo");
+  if (f) f.value = "";
+  if (t) t.value = "";
+  buildAdminExpenses(allProjects);
 });
 
 document.getElementById("adminExpensesToggle")?.addEventListener("click", function () {
