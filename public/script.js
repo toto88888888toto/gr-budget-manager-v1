@@ -1574,7 +1574,7 @@ init().catch((error) => {
     document.getElementById("editTxType").value        = tx.type || "expense";
     document.getElementById("editTxAmount").value      = tx.amount || "";
     document.getElementById("editTxCategory").value    = tx.category || "";
-    document.getElementById("editTxDate").value        = tx.date || "";
+    document.getElementById("editTxDate").value        = tx.date || new Date().toISOString().slice(0, 10);
     document.getElementById("editTxDescription").value = tx.description || "";
     document.getElementById("editTxBill").value        = "";
 
@@ -1613,7 +1613,7 @@ init().catch((error) => {
     try {
       const res = await fetch(`/api/transactions/${id}`, { method: "PUT", body: fd });
       const data = await res.json();
-      if (!data.ok) { alert(data.error || "Failed to save"); return; }
+      if (!data.ok) { showToast(data.error || "Failed to save", "error"); return; }
       closeEditTx();
       await loadProjects(true);
     } catch (err) {
