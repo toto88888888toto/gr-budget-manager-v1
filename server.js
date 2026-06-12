@@ -146,7 +146,7 @@ async function getOrCreateSubfolder(name, parentId, cacheVar) {
 }
 
 async function uploadImageToDrive(filePath, fileName) {
-  if (!drive) return;
+  if (!drive) return null;
   try {
     const isLogo = filePath.includes('/logos/');
     if (isLogo) {
@@ -155,7 +155,7 @@ async function uploadImageToDrive(filePath, fileName) {
       driveBillsFolderId = driveBillsFolderId || await getOrCreateSubfolder('bills', DRIVE_FOLDER_ID);
     }
     const folderId = isLogo ? driveLogosFolderId : driveBillsFolderId;
-    if (!folderId) return;
+    if (!folderId) return null;
     const ext = path.extname(fileName).toLowerCase();
     const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.pdf': 'application/pdf', '.webp': 'image/webp' };
     const mimeType = mimeMap[ext] || 'application/octet-stream';
@@ -164,15 +164,38 @@ async function uploadImageToDrive(filePath, fileName) {
       fields: 'files(id)', spaces: 'drive'
     });
     const media = { mimeType, body: fs.createReadStream(filePath) };
+    let fileId;
     if (existing.data.files?.length > 0) {
-      await drive.files.update({ fileId: existing.data.files[0].id, media });
+      fileId = existing.data.files[0].id;
+      await drive.files.update({ fileId, media });
     } else {
-      await drive.files.create({ requestBody: { name: fileName, parents: [folderId] }, media });
+      const created = await drive.files.create({ requestBody: { name: fileName, parents: [folderId] }, media });
+      fileId = created.data.id;
     }
-    console.log('[Drive] Uploaded image:', fileName);
+    // Make file publicly readable so it can be embedded in the app
+    await drive.permissions.create({ fileId, requestBody: { role: 'reader', type: 'anyone' } });
+    console.log('[Drive] Uploaded image:', fileName, 'fileId:', fileId);
+    return fileId;
   } catch (err) {
     console.error('[Drive] Image upload failed:', fileName, err.message);
+    return null;
   }
+}
+
+// Upload a file to Drive and return its public URL (or local path fallback)
+async function resolveFilePath(file) {
+  if (!file) return '';
+  const localPath = publicPathFromFile(file);
+  if (!drive) return localPath;
+  try {
+    const fileId = await uploadImageToDrive(file.path, file.filename);
+    if (fileId) {
+      return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    }
+  } catch (err) {
+    console.error('[Drive] resolveFilePath failed:', err.message);
+  }
+  return localPath;
 }
 
 async function downloadFolderFromDrive(driveFolderId, localDir) {
@@ -313,7 +336,10 @@ function publicPathFromFile(file) {
 
 function removePublicFile(filePath) {
   try {
-    if (!filePath || typeof filePath !== 'string' || !filePath.startsWith('/uploads/')) return;
+    // Skip Drive URLs — they are managed on Google Drive, not locally
+    if (!filePath || typeof filePath !== 'string') return;
+    if (filePath.startsWith('https://')) return;
+    if (!filePath.startsWith('/uploads/')) return;
     const fullPath = path.join(DATA_DIR, filePath.replace('/', ''));
     if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
   } catch (error) {
@@ -677,8 +703,8 @@ function calculateProjectNumbers(project, transactions) {
   };
 }
 
-function projectPayload(body, existing, req, projects, transactions) {
-  const uploadedLogo = publicPathFromFile(req.files?.companyLogo?.[0]);
+function projectPayload(body, existing, req, projects, transactions, resolvedLogoPath) {
+  const uploadedLogo = resolvedLogoPath !== undefined ? resolvedLogoPath : publicPathFromFile(req.files?.companyLogo?.[0]);
 
   const totalPrice = toNumber(body.totalPrice ?? existing?.totalPrice);
   const vatPercent =
@@ -724,7 +750,7 @@ function projectPayload(body, existing, req, projects, transactions) {
   };
 }
 
-function transactionPayload(projectId, body, req, transactions) {
+function transactionPayload(projectId, body, req, transactions, resolvedBillPath) {
   return {
     id: uuidv4(),
     no: nextTransactionNo(transactions, projectId),
@@ -735,7 +761,7 @@ function transactionPayload(projectId, body, req, transactions) {
     currency: toText(body.currency || 'LAK').toUpperCase(),
     amount: toNumber(body.amount),
     date: normalizeDate(body.date),
-    billPath: publicPathFromFile(req.files?.billFile?.[0]),
+    billPath: resolvedBillPath !== undefined ? resolvedBillPath : publicPathFromFile(req.files?.billFile?.[0]),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -933,13 +959,14 @@ app.get('/api/next-project-code', requireAuth, async (req, res) => {
 
 app.post('/api/projects', requireAuth, projectUpload, async (req, res) => {
   try {
+    const resolvedLogoPath = await resolveFilePath(req.files?.companyLogo?.[0]);
     const result = await queueWrite(async () => {
       const { workbook, projectSheet, transactionSheet } = await openWorkbook();
 
       const projects = readProjects(projectSheet);
       const transactions = readTransactions(transactionSheet);
 
-      const project = projectPayload(req.body, null, req, projects, transactions);
+      const project = projectPayload(req.body, null, req, projects, transactions, resolvedLogoPath);
       const validation = validateProject(project);
       if (validation) {
         return { status: 400, body: { ok: false, error: validation } };
@@ -954,7 +981,6 @@ app.post('/api/projects', requireAuth, projectUpload, async (req, res) => {
       };
     });
 
-    scheduleImageUpload(req);
     return res.status(result.status).json(result.body);
   } catch (error) {
     console.error('Cannot save project:', error);
@@ -964,6 +990,7 @@ app.post('/api/projects', requireAuth, projectUpload, async (req, res) => {
 
 app.put('/api/projects/:id', requireAuth, projectUpload, async (req, res) => {
   try {
+    const resolvedLogoPath = await resolveFilePath(req.files?.companyLogo?.[0]);
     const result = await queueWrite(async () => {
       const { workbook, projectSheet, transactionSheet } = await openWorkbook();
 
@@ -975,7 +1002,7 @@ app.put('/api/projects/:id', requireAuth, projectUpload, async (req, res) => {
         return { status: 404, body: { ok: false, error: 'Project not found' } };
       }
 
-      const updated = projectPayload(req.body, existing, req, projects, transactions);
+      const updated = projectPayload(req.body, existing, req, projects, transactions, resolvedLogoPath);
 
       updated.id = existing.id;
       updated.no = existing.no;
@@ -1007,7 +1034,6 @@ app.put('/api/projects/:id', requireAuth, projectUpload, async (req, res) => {
       };
     });
 
-    scheduleImageUpload(req);
     return res.status(result.status).json(result.body);
   } catch (error) {
     console.error('Cannot update project:', error);
@@ -1102,6 +1128,7 @@ app.delete('/api/projects/:id', requireAuth, async (req, res) => {
 
 app.post('/api/projects/:id/transactions', requireAuth, transactionUpload, async (req, res) => {
   try {
+    const resolvedBillPath = await resolveFilePath(req.files?.billFile?.[0]);
     const result = await queueWrite(async () => {
       const { workbook, projectSheet, transactionSheet } = await openWorkbook();
       const { projects, transactions } = await getAllData();
@@ -1111,7 +1138,7 @@ app.post('/api/projects/:id/transactions', requireAuth, transactionUpload, async
         return { status: 404, body: { ok: false, error: 'Project not found' } };
       }
 
-      const tx = transactionPayload(project.id, req.body, req, transactions);
+      const tx = transactionPayload(project.id, req.body, req, transactions, resolvedBillPath);
       const validation = validateTransaction(tx);
       if (validation) {
         return { status: 400, body: { ok: false, error: validation } };
@@ -1133,7 +1160,6 @@ app.post('/api/projects/:id/transactions', requireAuth, transactionUpload, async
       };
     });
 
-    scheduleImageUpload(req);
     return res.status(result.status).json(result.body);
   } catch (error) {
     console.error('Cannot save transaction:', error);
@@ -1144,6 +1170,7 @@ app.post('/api/projects/:id/transactions', requireAuth, transactionUpload, async
 
 app.put('/api/transactions/:id', requireAuth, transactionUpload, async (req, res) => {
   try {
+    const resolvedNewBillPath = await resolveFilePath(req.files?.billFile?.[0]);
     const result = await queueWrite(async () => {
       const { workbook, projectSheet, transactionSheet } = await openWorkbook();
       const { projects, transactions } = await getAllData();
@@ -1155,7 +1182,7 @@ app.put('/api/transactions/:id', requireAuth, transactionUpload, async (req, res
       if (!project) return { status: 404, body: { ok: false, error: 'Project not found' } };
 
       // If new bill uploaded, remove old one
-      const newBillPath = publicPathFromFile(req.files?.billFile?.[0]);
+      const newBillPath = resolvedNewBillPath;
       if (newBillPath && tx.billPath) removePublicFile(tx.billPath);
 
       const updated = {
