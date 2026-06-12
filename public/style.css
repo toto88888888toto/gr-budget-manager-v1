@@ -1217,7 +1217,8 @@ body.dark .status-on_hold {
   margin-bottom: 16px;
 }
 .cat-search-wrap input {
-  max-width: 320px;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ── STACKED MODAL Z-INDEX ─────────────────────────── */
