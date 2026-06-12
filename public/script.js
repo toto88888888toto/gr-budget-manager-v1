@@ -457,7 +457,25 @@ function buildCategoryBreakdown(projects) {
     return;
   }
 
-  grid.innerHTML = sorted.map(([cat, data]) => `
+  // Wire up search once
+  const searchInput = document.getElementById("categorySearch");
+  if (searchInput && !searchInput._catBound) {
+    searchInput._catBound = true;
+    searchInput.addEventListener("input", () => renderCatCards(grid, map, sorted, searchInput.value.trim().toLowerCase()));
+  }
+
+  renderCatCards(grid, map, sorted, searchInput ? searchInput.value.trim().toLowerCase() : "");
+}
+
+function renderCatCards(grid, map, sorted, filter = "") {
+  const filtered = filter ? sorted.filter(([cat]) => cat.toLowerCase().includes(filter)) : sorted;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<p style="color:var(--muted);font-size:13px;">No categories match your search.</p>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(([cat, data]) => `
     <div class="cat-card" data-cat="${escapeHtml(cat)}">
       <div class="cat-name">${escapeHtml(cat)}</div>
       <div class="cat-total">${formatDisplayNumber(data.total)}</div>
@@ -474,8 +492,7 @@ function buildCategoryBreakdown(projects) {
   grid.querySelectorAll(".cat-card").forEach(card => {
     card.addEventListener("click", () => {
       const cat = card.dataset.cat;
-      const data = map[cat];
-      openCategoryModal(cat, data);
+      openCategoryModal(cat, map[cat]);
     });
   });
 }

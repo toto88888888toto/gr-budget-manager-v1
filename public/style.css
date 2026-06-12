@@ -1211,3 +1211,11 @@ body.dark .status-on_hold {
   padding: 20px;
   overflow: auto;
 }
+
+/* ── CATEGORY SEARCH ───────────────────────────────── */
+.cat-search-wrap {
+  margin-bottom: 16px;
+}
+.cat-search-wrap input {
+  max-width: 320px;
+}
