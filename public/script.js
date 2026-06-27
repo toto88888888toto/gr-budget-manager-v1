@@ -748,7 +748,7 @@ function openProfitModal() {
         </thead>
         <tbody>
           ${rows.map(r => `
-            <tr data-project-id="${escapeHtml(r.id || "")}">
+            <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to view this project">
               <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
               <td style="text-align:right">${formatMoney(r.income, r.currency)}</td>
               <td style="text-align:right">${formatMoney(r.cost, r.currency)}</td>
@@ -814,7 +814,7 @@ function openRemainingModal() {
         </thead>
         <tbody>
           ${rows.map(r => `
-            <tr data-project-id="${escapeHtml(r.id || "")}">
+            <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to view this project">
               <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
               <td style="text-align:right">${formatMoney(r.contract, r.currency)}</td>
               <td style="text-align:right">${formatMoney(r.received, r.currency)}</td>
@@ -835,8 +835,18 @@ function openRemainingModal() {
   document.body.classList.add("modal-open");
 }
 
-// Wire up the "Edit" button for the profit/remaining detail tables.
+// Wire up the profit/remaining detail tables: clicking a row opens the
+// project's detail card, the Edit button jumps straight to editing.
 function bindProjectRowClicks(container) {
+  container.querySelectorAll("tr.cat-row-clickable").forEach(row => {
+    row.addEventListener("click", () => {
+      const project = allProjects.find(p => p.id === row.dataset.projectId);
+      if (!project) return;
+      closeCategoryModal();
+      openProjectModal(project);
+    });
+  });
+
   container.querySelectorAll(".btn-edit-row").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
