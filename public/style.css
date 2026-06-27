@@ -1196,6 +1196,7 @@ body.dark .status-on_hold {
 }
 .cat-table tr:last-child td { border-bottom: none; }
 .cat-table tr:hover td { background: var(--surface-2); }
+.cat-table tr.cat-row-clickable { cursor: pointer; }
 
 .cat-proj-code {
   font-size: 10px; font-weight: 700; color: var(--muted);

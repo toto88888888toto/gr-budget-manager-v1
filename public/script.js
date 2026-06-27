@@ -711,6 +711,7 @@ function openProfitModal() {
 
   const rows = allProjects
     .map(p => ({
+      id: p.id,
       code: p.projectCode,
       name: p.projectName,
       currency: p.contractCurrency || "LAK",
@@ -723,7 +724,7 @@ function openProfitModal() {
   const totalProfit = rows.reduce((s, r) => s + r.profit, 0);
 
   title.textContent = "Total Profit by Project";
-  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} · Net: ${formatDisplayNumber(totalProfit)}`;
+  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} · Net: ${formatDisplayNumber(totalProfit)} · Click a row to edit`;
 
   body.innerHTML = rows.length === 0
     ? '<p style="color:var(--muted);font-size:13px;">No projects yet.</p>'
@@ -739,7 +740,7 @@ function openProfitModal() {
         </thead>
         <tbody>
           ${rows.map(r => `
-            <tr>
+            <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to edit this project">
               <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
               <td style="text-align:right">${formatMoney(r.income, r.currency)}</td>
               <td style="text-align:right">${formatMoney(r.cost, r.currency)}</td>
@@ -749,6 +750,8 @@ function openProfitModal() {
         </tbody>
       </table>
     `;
+
+  bindProjectRowClicks(body);
 
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
@@ -768,6 +771,7 @@ function openRemainingModal() {
       const contract = toNumber(p.totalPriceWithVat);
       const received = toNumber(p.totals?.income);
       return {
+        id: p.id,
         code: p.projectCode,
         name: p.projectName,
         currency: p.contractCurrency || "LAK",
@@ -782,7 +786,7 @@ function openRemainingModal() {
   const totalRemaining = rows.reduce((s, r) => s + r.remaining, 0);
 
   title.textContent = "Remaining to Collect by Project";
-  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} with a balance · Total: ${formatDisplayNumber(totalRemaining)}`;
+  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} with a balance · Total: ${formatDisplayNumber(totalRemaining)} · Click a row to edit`;
 
   body.innerHTML = rows.length === 0
     ? '<p style="color:var(--muted);font-size:13px;">Nothing outstanding — all projects are fully collected.</p>'
@@ -798,7 +802,7 @@ function openRemainingModal() {
         </thead>
         <tbody>
           ${rows.map(r => `
-            <tr>
+            <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to edit this project">
               <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
               <td style="text-align:right">${formatMoney(r.contract, r.currency)}</td>
               <td style="text-align:right">${formatMoney(r.received, r.currency)}</td>
@@ -809,9 +813,29 @@ function openRemainingModal() {
       </table>
     `;
 
+  bindProjectRowClicks(body);
+
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
+}
+
+// Wire up "click row to edit project" for the profit/remaining detail tables.
+function bindProjectRowClicks(container) {
+  container.querySelectorAll("tr.cat-row-clickable").forEach(row => {
+    row.addEventListener("click", () => {
+      const project = allProjects.find(p => p.id === row.dataset.projectId);
+      if (!project) return;
+      closeCategoryModal();
+      try {
+        populateProjectForm(project);
+        setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+      } catch (e) {
+        console.error("Edit project error:", e);
+        showToast("Edit failed: " + e.message, "error");
+      }
+    });
+  });
 }
 
 function bindClickableKpi(id, handler) {
