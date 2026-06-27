@@ -675,6 +675,7 @@ function openTransactionTypeModal(type, label) {
             <th>Description</th>
             <th style="text-align:right">Amount</th>
             <th style="text-align:center">Bill</th>
+            <th style="text-align:center">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -689,11 +690,17 @@ function openTransactionTypeModal(type, label) {
                   ? `<button class="btn btn-sm" onclick="openBillPopup('${tx.billPath}')" type="button">View Bill</button>`
                   : `<span style="color:var(--muted);font-size:12px;">—</span>`}
               </td>
+              <td style="text-align:center">
+                <button class="btn btn-sm btn-edit-row" type="button" data-action="edit-tx" data-id="${escapeHtml(tx.id || "")}">Edit</button>
+              </td>
             </tr>
           `).join("")}
         </tbody>
       </table>
     `;
+    body.querySelectorAll('[data-action="edit-tx"]').forEach(btn => {
+      btn.addEventListener("click", () => closeCategoryModal());
+    });
   }
 
   modal.classList.remove("hidden");
