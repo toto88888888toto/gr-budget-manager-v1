@@ -778,6 +778,7 @@ function openRemainingModal() {
   if (!modal || !body) return;
 
   const rows = allProjects
+    .filter(p => normalizeStatus(p.status) === "active")
     .map(p => {
       const contract = toNumber(p.totalPriceWithVat);
       const received = toNumber(p.totals?.income);

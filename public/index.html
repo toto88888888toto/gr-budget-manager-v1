@@ -708,18 +708,20 @@
       let totalContract = 0;
       let totalIncome = 0;
 
-      projects.forEach(p => {
-        const price = parseFloat(String(p.totalPrice || 0).replace(/,/g, '')) || 0;
-        const vat = parseFloat(String(p.vatPercent || 0).replace(/,/g, '')) || 0;
-        totalContract += price + (price * vat / 100);
+      projects
+        .filter(p => String(p.status || '').toLowerCase().trim().replace(/[\s-]+/g, '_') === 'active')
+        .forEach(p => {
+          const price = parseFloat(String(p.totalPrice || 0).replace(/,/g, '')) || 0;
+          const vat = parseFloat(String(p.vatPercent || 0).replace(/,/g, '')) || 0;
+          totalContract += price + (price * vat / 100);
 
-        const txs = Array.isArray(p.transactions) ? p.transactions : [];
-        txs.forEach(tx => {
-          if (tx.type === 'income') {
-            totalIncome += parseFloat(String(tx.amount || 0).replace(/,/g, '')) || 0;
-          }
+          const txs = Array.isArray(p.transactions) ? p.transactions : [];
+          txs.forEach(tx => {
+            if (tx.type === 'income') {
+              totalIncome += parseFloat(String(tx.amount || 0).replace(/,/g, '')) || 0;
+            }
+          });
         });
-      });
 
       // Also read from the KPI if transactions not embedded
       if (totalIncome === 0) {
