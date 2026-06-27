@@ -845,7 +845,7 @@ function bindProjectRowClicks(container) {
       closeCategoryModal();
       try {
         populateProjectForm(project);
-        setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+        if (typeof window.openProjectDrawer === 'function') window.openProjectDrawer();
       } catch (e) {
         console.error("Edit project error:", e);
         showToast("Edit failed: " + e.message, "error");
@@ -1778,7 +1778,7 @@ function attachEvents() {
     try {
       populateProjectForm(project);
       closeProjectModal();
-      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+      if (typeof window.openProjectDrawer === 'function') window.openProjectDrawer();
     } catch(e) {
       console.error("Edit project error:", e);
       showToast("Edit failed: " + e.message, "error");
