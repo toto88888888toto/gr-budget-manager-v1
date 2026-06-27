@@ -104,6 +104,7 @@ const projectList = $("projectList");
 const searchInput = $("searchInput");
 const filterCategory = $("filterCategory");
 const filterOwner = $("filterOwner");
+const filterStatus = $("filterStatus");
 const sortBy = $("sortBy");
 
 // KPI
@@ -1099,6 +1100,7 @@ function getFilteredProjects() {
   const keyword = searchInput.value.trim().toLowerCase();
   const categoryValue = filterCategory.value.trim().toLowerCase();
   const ownerValue = filterOwner.value.trim().toLowerCase();
+  const statusValue = filterStatus ? filterStatus.value.trim().toLowerCase() : "";
   const sortValue = sortBy.value;
 
   let items = allProjects.filter((item) => {
@@ -1117,8 +1119,10 @@ function getFilteredProjects() {
       !categoryValue || String(item.category || "").toLowerCase() === categoryValue;
     const matchesOwner =
       !ownerValue || String(item.owner || "").toLowerCase() === ownerValue;
+    const matchesStatus =
+      !statusValue || normalizeStatus(item.status) === statusValue;
 
-    return matchesKeyword && matchesCategory && matchesOwner;
+    return matchesKeyword && matchesCategory && matchesOwner && matchesStatus;
   });
 
   items = [...items];
@@ -1790,6 +1794,7 @@ function attachEvents() {
   searchInput.addEventListener("input", renderProjectList);
   filterCategory.addEventListener("input", renderProjectList);
   filterOwner.addEventListener("input", renderProjectList);
+  filterStatus?.addEventListener("change", renderProjectList);
   sortBy.addEventListener("change", renderProjectList);
 
   closeTxModalBtn?.addEventListener("click", closeTxModal);

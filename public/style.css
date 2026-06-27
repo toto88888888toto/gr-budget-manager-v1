@@ -319,7 +319,7 @@ body.dark .theme-toggle .icon-sun { display: none; }
 /* ── FILTERS ─────────────────────────────────────────── */
 .filter-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 180px;
+  grid-template-columns: 2fr 1fr 1fr 140px 180px;
   gap: 10px;
   margin-bottom: 18px;
   align-items: end;
