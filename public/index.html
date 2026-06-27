@@ -48,46 +48,65 @@
 
       <!-- ── SUMMARY BAR ───────────────────────────── -->
       <div class="summary-bar">
-        <div class="summary-item">
-          <span class="summary-label">Total Projects</span>
-          <span class="summary-value" id="kpiProjects">0</span>
+        <div class="summary-item s-projects">
+          <span class="summary-icon">📁</span>
+          <div class="summary-body">
+            <span class="summary-label">Total Projects</span>
+            <span class="summary-value" id="kpiProjects">0</span>
+          </div>
         </div>
         <div class="summary-item s-income clickable-kpi" id="incomeCard" title="Click to see all income transactions" role="button" tabindex="0">
-          <span class="summary-label">
-            <span class="summary-dot"></span>Total Income
-            <span class="view-badge">VIEW ▸</span>
-          </span>
-          <span class="summary-value" id="kpiIncome">0</span>
+          <span class="summary-icon">💰</span>
+          <div class="summary-body">
+            <span class="summary-label">
+              Total Income
+              <span class="view-badge">VIEW ▸</span>
+            </span>
+            <span class="summary-value" id="kpiIncome">0</span>
+          </div>
         </div>
         <div class="summary-item s-investment clickable-kpi" id="investmentCard" title="Click to see all investment transactions" role="button" tabindex="0">
-          <span class="summary-label">
-            <span class="summary-dot"></span>Total Investment
-            <span class="view-badge investment">VIEW ▸</span>
-          </span>
-          <span class="summary-value" id="kpiInvestment">0</span>
+          <span class="summary-icon">📊</span>
+          <div class="summary-body">
+            <span class="summary-label">
+              Total Investment
+              <span class="view-badge investment">VIEW ▸</span>
+            </span>
+            <span class="summary-value" id="kpiInvestment">0</span>
+          </div>
         </div>
         <div class="summary-item s-expense clickable-kpi" id="expenseCard" title="Click to see all expense transactions" role="button" tabindex="0">
-          <span class="summary-label">
-            <span class="summary-dot"></span>Total Expense
-            <span class="view-badge expense">VIEW ▸</span>
-          </span>
-          <span class="summary-value" id="kpiExpense">0</span>
+          <span class="summary-icon">💸</span>
+          <div class="summary-body">
+            <span class="summary-label">
+              Total Expense
+              <span class="view-badge expense">VIEW ▸</span>
+            </span>
+            <span class="summary-value" id="kpiExpense">0</span>
+          </div>
         </div>
         <div class="summary-item s-profit clickable-kpi" id="profitCard" title="Click to see profit per project" role="button" tabindex="0">
-          <span class="summary-label">
-            <span class="summary-dot"></span>Total Profit
-            <span class="profit-badge">NET</span>
-          </span>
-          <span class="summary-value" id="kpiProfit">0</span>
+          <span class="summary-icon">📈</span>
+          <div class="summary-body">
+            <span class="summary-label">
+              Total Profit
+              <span class="profit-badge">NET</span>
+            </span>
+            <span class="summary-value" id="kpiProfit">0</span>
+            <span class="summary-sub" id="kpiProfitSub"></span>
+          </div>
         </div>
 
         <div class="summary-item s-contract clickable-kpi" id="contractCard" title="Click to see remaining balance per project" role="button" tabindex="0">
-          <span class="summary-label">
-            <span class="summary-dot"></span>Remaining to Collect
-            <span class="contract-badge">LEFT</span>
-          </span>
-          <span class="summary-value" id="kpiContractValue">0</span>
-          <span class="summary-sub" id="kpiContractSub"></span>
+          <span class="summary-icon">🧾</span>
+          <div class="summary-body">
+            <span class="summary-label">
+              Remaining to Collect
+              <span class="contract-badge">LEFT</span>
+            </span>
+            <span class="summary-value" id="kpiContractValue">0</span>
+            <span class="summary-sub" id="kpiContractSub"></span>
+          </div>
         </div>
       </div>
 

@@ -441,7 +441,10 @@ function buildProjectSummary(project) {
   const actualCost = investment + expense;
   const totalPriceWithVat = calcTotalWithVat(safeTotalPrice, safeVatPercent);
   const vatAmount = totalPriceWithVat - safeTotalPrice;
-  const estimatedProfit = income - actualCost - vatAmount;
+  // Net profit excludes investment — investment is capital outlay, not a
+  // cost against this period's income, so it shouldn't drag profit negative.
+  const estimatedProfit = income - expense - vatAmount;
+  const estimatedProfitInclInvestment = estimatedProfit - investment;
   const balance = income - actualCost;
 
   return {
@@ -451,6 +454,7 @@ function buildProjectSummary(project) {
     totalPriceWithVat,
     actualCost,
     estimatedProfit,
+    estimatedProfitInclInvestment,
     balance,
     totals: {
       income,
@@ -487,6 +491,7 @@ function normalizeProject(project) {
     totalPriceWithVat: summary.totalPriceWithVat,
     actualCost: summary.actualCost,
     estimatedProfit: summary.estimatedProfit,
+    estimatedProfitInclInvestment: summary.estimatedProfitInclInvestment,
     balance: summary.balance,
     transactionCount: summary.transactionCount,
     totals: summary.totals,
@@ -501,9 +506,10 @@ function updateKPIs(projects) {
       sum.investment += toNumber(project.totals?.investment);
       sum.expense += toNumber(project.totals?.expense);
       sum.profit += toNumber(project.estimatedProfit);
+      sum.profitInclInvestment += toNumber(project.estimatedProfitInclInvestment);
       return sum;
     },
-    { income: 0, investment: 0, expense: 0, profit: 0 }
+    { income: 0, investment: 0, expense: 0, profit: 0, profitInclInvestment: 0 }
   );
 
   kpiProjects.textContent = String(projects.length);
@@ -513,6 +519,10 @@ function updateKPIs(projects) {
   if (kpiProfit) {
     kpiProfit.textContent = formatDisplayNumber(total.profit);
     kpiProfit.style.color = total.profit >= 0 ? "" : "#dc2626";
+  }
+  const kpiProfitSub = document.getElementById("kpiProfitSub");
+  if (kpiProfitSub) {
+    kpiProfitSub.textContent = `incl. Investment: ${formatDisplayNumber(total.profitInclInvestment)}`;
   }
   buildCategoryBreakdown(projects);
   buildAdminExpenses(projects);
@@ -723,15 +733,18 @@ function openProfitModal() {
       name: p.projectName,
       currency: p.contractCurrency || "LAK",
       income: toNumber(p.totals?.income),
-      cost: toNumber(p.actualCost),
+      investment: toNumber(p.totals?.investment),
+      expense: toNumber(p.totals?.expense),
       profit: toNumber(p.estimatedProfit),
+      profitInclInvestment: toNumber(p.estimatedProfitInclInvestment),
     }))
     .sort((a, b) => b.profit - a.profit);
 
   const totalProfit = rows.reduce((s, r) => s + r.profit, 0);
+  const totalProfitInclInvestment = rows.reduce((s, r) => s + r.profitInclInvestment, 0);
 
   title.textContent = "Total Profit by Project";
-  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} · Net: ${formatDisplayNumber(totalProfit)}`;
+  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} · Net Profit: ${formatDisplayNumber(totalProfit)} · incl. Investment: ${formatDisplayNumber(totalProfitInclInvestment)}`;
 
   body.innerHTML = rows.length === 0
     ? '<p style="color:var(--muted);font-size:13px;">No projects yet.</p>'
@@ -741,8 +754,9 @@ function openProfitModal() {
           <tr>
             <th>Project</th>
             <th style="text-align:right">Income</th>
-            <th style="text-align:right">Cost</th>
-            <th style="text-align:right">Profit</th>
+            <th style="text-align:right">Expense</th>
+            <th style="text-align:right">Net Profit</th>
+            <th style="text-align:right">Incl. Investment</th>
             <th style="text-align:center">Action</th>
           </tr>
         </thead>
@@ -751,8 +765,9 @@ function openProfitModal() {
             <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to view this project">
               <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
               <td style="text-align:right">${formatMoney(r.income, r.currency)}</td>
-              <td style="text-align:right">${formatMoney(r.cost, r.currency)}</td>
+              <td style="text-align:right">${formatMoney(r.expense, r.currency)}</td>
               <td style="text-align:right;font-weight:600;color:${r.profit >= 0 ? 'var(--success)' : 'var(--expense)'}">${formatMoney(r.profit, r.currency)}</td>
+              <td style="text-align:right;color:${r.profitInclInvestment >= 0 ? 'var(--success)' : 'var(--expense)'}">${formatMoney(r.profitInclInvestment, r.currency)}</td>
               <td style="text-align:center">
                 <button class="btn btn-sm btn-edit-row" type="button" data-project-id="${escapeHtml(r.id || "")}">Edit</button>
               </td>
