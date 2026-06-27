@@ -286,6 +286,16 @@ body.dark .theme-toggle .icon-sun { display: none; }
   padding: 2px 6px; border-radius: 4px;
 }
 
+.view-badge {
+  margin-left: auto;
+  font-size: 9px; font-weight: 800; letter-spacing: .1em;
+  background: var(--success); color: #fff;
+  padding: 2px 6px; border-radius: 4px;
+}
+
+.clickable-kpi { cursor: pointer; }
+.clickable-kpi:focus-visible { outline: 2px solid var(--success); outline-offset: 2px; }
+
 .summary-item.s-contract {
   background: var(--surface);
   border-color: var(--border);

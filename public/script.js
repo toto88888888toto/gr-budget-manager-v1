@@ -637,6 +637,81 @@ function closeCategoryModal() {
   document.body.classList.remove("modal-open");
 }
 
+// ── TOTAL INCOME DETAIL ────────────────────────────────────────
+// Click the "Total Income" KPI card to list every income transaction
+// across all projects.
+function openIncomeModal() {
+  const txs = [];
+  let total = 0;
+  for (const project of allProjects) {
+    for (const tx of (project.transactions || [])) {
+      if (tx.type !== "income") continue;
+      total += toNumber(tx.amount);
+      txs.push({ ...tx, _projectName: project.projectName, _projectCode: project.projectCode });
+    }
+  }
+
+  // Newest first by date
+  txs.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+
+  const modal = document.getElementById("categoryModal");
+  const title = document.getElementById("categoryModalTitle");
+  const sub   = document.getElementById("categoryModalSub");
+  const body  = document.getElementById("categoryModalBody");
+  if (!modal || !body) return;
+
+  title.textContent = "Total Income";
+  sub.textContent   = `${txs.length} income transaction${txs.length !== 1 ? "s" : ""} · Total: ${formatDisplayNumber(total)}`;
+
+  if (txs.length === 0) {
+    body.innerHTML = '<p style="color:var(--muted);font-size:13px;">No income transactions yet.</p>';
+  } else {
+    body.innerHTML = `
+      <table class="cat-table">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Date</th>
+            <th>Description</th>
+            <th style="text-align:right">Amount</th>
+            <th style="text-align:center">Bill</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${txs.map(tx => `
+            <tr>
+              <td><span class="cat-proj-code">${escapeHtml(tx._projectCode || "")}</span> ${escapeHtml(tx._projectName || "")}</td>
+              <td>${escapeHtml(tx.date || "-")}</td>
+              <td>${escapeHtml(tx.description || "-")}</td>
+              <td style="text-align:right;font-weight:600">${formatDisplayNumber(tx.amount)}</td>
+              <td style="text-align:center">
+                ${tx.billPath
+                  ? `<button class="btn btn-sm" onclick="openBillPopup('${tx.billPath}')" type="button">View Bill</button>`
+                  : `<span style="color:var(--muted);font-size:12px;">—</span>`}
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+const incomeCardEl = document.getElementById("incomeCard");
+if (incomeCardEl) {
+  incomeCardEl.addEventListener("click", openIncomeModal);
+  incomeCardEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openIncomeModal();
+    }
+  });
+}
+
 
 // ── BILL POPUP ─────────────────────────────────────────────────
 function openBillPopup(url) {
