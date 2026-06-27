@@ -724,7 +724,7 @@ function openProfitModal() {
   const totalProfit = rows.reduce((s, r) => s + r.profit, 0);
 
   title.textContent = "Total Profit by Project";
-  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} · Net: ${formatDisplayNumber(totalProfit)} · Click a row to edit`;
+  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} · Net: ${formatDisplayNumber(totalProfit)}`;
 
   body.innerHTML = rows.length === 0
     ? '<p style="color:var(--muted);font-size:13px;">No projects yet.</p>'
@@ -736,15 +736,19 @@ function openProfitModal() {
             <th style="text-align:right">Income</th>
             <th style="text-align:right">Cost</th>
             <th style="text-align:right">Profit</th>
+            <th style="text-align:center">Action</th>
           </tr>
         </thead>
         <tbody>
           ${rows.map(r => `
-            <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to edit this project">
+            <tr data-project-id="${escapeHtml(r.id || "")}">
               <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
               <td style="text-align:right">${formatMoney(r.income, r.currency)}</td>
               <td style="text-align:right">${formatMoney(r.cost, r.currency)}</td>
               <td style="text-align:right;font-weight:600;color:${r.profit >= 0 ? 'var(--success)' : 'var(--expense)'}">${formatMoney(r.profit, r.currency)}</td>
+              <td style="text-align:center">
+                <button class="btn btn-sm btn-edit-row" type="button" data-project-id="${escapeHtml(r.id || "")}">Edit</button>
+              </td>
             </tr>
           `).join("")}
         </tbody>
@@ -786,7 +790,7 @@ function openRemainingModal() {
   const totalRemaining = rows.reduce((s, r) => s + r.remaining, 0);
 
   title.textContent = "Remaining to Collect by Project";
-  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} with a balance · Total: ${formatDisplayNumber(totalRemaining)} · Click a row to edit`;
+  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} with a balance · Total: ${formatDisplayNumber(totalRemaining)}`;
 
   body.innerHTML = rows.length === 0
     ? '<p style="color:var(--muted);font-size:13px;">Nothing outstanding — all projects are fully collected.</p>'
@@ -798,15 +802,19 @@ function openRemainingModal() {
             <th style="text-align:right">Contract</th>
             <th style="text-align:right">Received</th>
             <th style="text-align:right">Remaining</th>
+            <th style="text-align:center">Action</th>
           </tr>
         </thead>
         <tbody>
           ${rows.map(r => `
-            <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to edit this project">
+            <tr data-project-id="${escapeHtml(r.id || "")}">
               <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
               <td style="text-align:right">${formatMoney(r.contract, r.currency)}</td>
               <td style="text-align:right">${formatMoney(r.received, r.currency)}</td>
               <td style="text-align:right;font-weight:600;color:${r.remaining >= 0 ? 'var(--investment)' : 'var(--expense)'}">${formatMoney(r.remaining, r.currency)}</td>
+              <td style="text-align:center">
+                <button class="btn btn-sm btn-edit-row" type="button" data-project-id="${escapeHtml(r.id || "")}">Edit</button>
+              </td>
             </tr>
           `).join("")}
         </tbody>
@@ -820,11 +828,12 @@ function openRemainingModal() {
   document.body.classList.add("modal-open");
 }
 
-// Wire up "click row to edit project" for the profit/remaining detail tables.
+// Wire up the "Edit" button for the profit/remaining detail tables.
 function bindProjectRowClicks(container) {
-  container.querySelectorAll("tr.cat-row-clickable").forEach(row => {
-    row.addEventListener("click", () => {
-      const project = allProjects.find(p => p.id === row.dataset.projectId);
+  container.querySelectorAll(".btn-edit-row").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const project = allProjects.find(p => p.id === btn.dataset.projectId);
       if (!project) return;
       closeCategoryModal();
       try {
