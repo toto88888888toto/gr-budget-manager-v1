@@ -136,23 +136,23 @@ body.dark .theme-toggle .icon-sun { display: none; }
   height: 38px; padding: 0 16px;
   border-radius: var(--radius-sm);
   font-size: 14px; font-weight: 500;
-  border: 1px solid #e0e0e0;
+  border: 1.5px solid var(--border-2);
   background: var(--surface);
   color: var(--text-2);
   transition: all .15s ease;
   white-space: nowrap; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px;
 }
-.btn:hover { background: #f5f5f5; border-color: #ccc; color: var(--text); }
+.btn:hover { background: var(--surface-2); border-color: var(--accent-border); color: var(--text); }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
 .btn-primary {
-  background: #111; border-color: #111;
+  background: var(--accent); border-color: var(--accent);
   color: #fff; font-weight: 600;
-  box-shadow: none;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.28);
 }
-.btn-primary:hover { background: #333; border-color: #333; box-shadow: none; }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 6px 18px rgba(99,102,241,0.34); }
 
 .btn-danger {
   background: var(--danger-bg); color: var(--danger);
@@ -311,8 +311,8 @@ body.dark .theme-toggle .icon-sun { display: none; }
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
 
-.panel-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
-.panel-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.panel-title { font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -0.015em; }
+.panel-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
 
 .panel-body { padding: 20px 24px; }
 
@@ -328,8 +328,8 @@ body.dark .theme-toggle .icon-sun { display: none; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 
 .field label {
-  font-size: 13px; font-weight: 500;
-  letter-spacing: 0;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: .03em;
   color: var(--text-2);
 }
 
@@ -341,13 +341,13 @@ input, select, textarea {
   padding: 0 12px;
   font-size: 14px; color: var(--text);
   outline: none;
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color .15s, box-shadow .15s, background .15s;
   width: 100%;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: var(--accent-border);
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
   background: var(--surface);
 }
 input::placeholder { color: var(--muted); }
@@ -375,7 +375,7 @@ input[type="file"] {
   border-radius: var(--radius-lg);
   padding: 20px;
   cursor: pointer;
-  transition: all .2s ease;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -383,14 +383,15 @@ input[type="file"] {
 }
 
 .project-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 10px 32px rgba(99,102,241,0.16), 0 2px 8px rgba(99,102,241,0.08);
-  transform: translateY(-3px);
+  border-color: var(--accent-border);
+  box-shadow: 0 12px 32px rgba(99,102,241,0.14), 0 3px 10px rgba(99,102,241,0.08);
+  transform: translateY(-4px);
 }
 
 .project-card.active {
   border-color: var(--accent);
   background: var(--accent-light);
+  box-shadow: 0 0 0 3px var(--accent-light), var(--shadow-card);
 }
 
 .project-head {
@@ -487,8 +488,8 @@ body.dark .status-on_hold {
 .meta-box {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 9px 12px;
+  border-radius: 12px;
+  padding: 10px 12px;
 }
 
 .meta-box .meta-label {
@@ -511,8 +512,9 @@ body.dark .status-on_hold {
 .amount-box {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   padding: 10px 12px;
+  transition: transform .15s ease;
 }
 
 .amount-box .label {
@@ -570,11 +572,11 @@ body.dark .status-on_hold {
 }
 
 .project-actions {
-  display: flex; gap: 6px; flex-wrap: wrap;
-  padding-top: 6px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding-top: 12px; border-top: 1px solid var(--border);
 }
 
-.project-actions .btn { flex: 1; justify-content: center; font-size: 12px; }
+.project-actions .btn { flex: 1; justify-content: center; font-size: 12.5px; font-weight: 600; }
 
 /* ── EMPTY STATE ─────────────────────────────────────── */
 .empty-state {
