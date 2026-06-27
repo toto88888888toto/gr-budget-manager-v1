@@ -292,6 +292,8 @@ body.dark .theme-toggle .icon-sun { display: none; }
   background: var(--success); color: #fff;
   padding: 2px 6px; border-radius: 4px;
 }
+.view-badge.investment { background: var(--investment); }
+.view-badge.expense { background: var(--expense); }
 
 .clickable-kpi { cursor: pointer; }
 .clickable-kpi:focus-visible { outline: 2px solid var(--success); outline-offset: 2px; }

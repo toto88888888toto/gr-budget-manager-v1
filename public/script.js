@@ -637,15 +637,15 @@ function closeCategoryModal() {
   document.body.classList.remove("modal-open");
 }
 
-// ── TOTAL INCOME DETAIL ────────────────────────────────────────
-// Click the "Total Income" KPI card to list every income transaction
-// across all projects.
-function openIncomeModal() {
+// ── KPI CARD DETAIL POPUPS ──────────────────────────────────────
+// Click any of the Total Income / Investment / Expense KPI cards to
+// list every matching transaction across all projects.
+function openTransactionTypeModal(type, label) {
   const txs = [];
   let total = 0;
   for (const project of allProjects) {
     for (const tx of (project.transactions || [])) {
-      if (tx.type !== "income") continue;
+      if (tx.type !== type) continue;
       total += toNumber(tx.amount);
       txs.push({ ...tx, _projectName: project.projectName, _projectCode: project.projectCode });
     }
@@ -660,11 +660,11 @@ function openIncomeModal() {
   const body  = document.getElementById("categoryModalBody");
   if (!modal || !body) return;
 
-  title.textContent = "Total Income";
-  sub.textContent   = `${txs.length} income transaction${txs.length !== 1 ? "s" : ""} · Total: ${formatDisplayNumber(total)}`;
+  title.textContent = label;
+  sub.textContent   = `${txs.length} ${type} transaction${txs.length !== 1 ? "s" : ""} · Total: ${formatDisplayNumber(total)}`;
 
   if (txs.length === 0) {
-    body.innerHTML = '<p style="color:var(--muted);font-size:13px;">No income transactions yet.</p>';
+    body.innerHTML = `<p style="color:var(--muted);font-size:13px;">No ${type} transactions yet.</p>`;
   } else {
     body.innerHTML = `
       <table class="cat-table">
@@ -701,16 +701,136 @@ function openIncomeModal() {
   document.body.classList.add("modal-open");
 }
 
-const incomeCardEl = document.getElementById("incomeCard");
-if (incomeCardEl) {
-  incomeCardEl.addEventListener("click", openIncomeModal);
-  incomeCardEl.addEventListener("keydown", (e) => {
+// Click "Total Profit" to see estimated profit broken down per project.
+function openProfitModal() {
+  const modal = document.getElementById("categoryModal");
+  const title = document.getElementById("categoryModalTitle");
+  const sub   = document.getElementById("categoryModalSub");
+  const body  = document.getElementById("categoryModalBody");
+  if (!modal || !body) return;
+
+  const rows = allProjects
+    .map(p => ({
+      code: p.projectCode,
+      name: p.projectName,
+      currency: p.contractCurrency || "LAK",
+      income: toNumber(p.totals?.income),
+      cost: toNumber(p.actualCost),
+      profit: toNumber(p.estimatedProfit),
+    }))
+    .sort((a, b) => b.profit - a.profit);
+
+  const totalProfit = rows.reduce((s, r) => s + r.profit, 0);
+
+  title.textContent = "Total Profit by Project";
+  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} · Net: ${formatDisplayNumber(totalProfit)}`;
+
+  body.innerHTML = rows.length === 0
+    ? '<p style="color:var(--muted);font-size:13px;">No projects yet.</p>'
+    : `
+      <table class="cat-table">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th style="text-align:right">Income</th>
+            <th style="text-align:right">Cost</th>
+            <th style="text-align:right">Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
+              <td style="text-align:right">${formatMoney(r.income, r.currency)}</td>
+              <td style="text-align:right">${formatMoney(r.cost, r.currency)}</td>
+              <td style="text-align:right;font-weight:600;color:${r.profit >= 0 ? 'var(--success)' : 'var(--expense)'}">${formatMoney(r.profit, r.currency)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+// Click "Remaining to Collect" to see contract vs. received balance per project.
+function openRemainingModal() {
+  const modal = document.getElementById("categoryModal");
+  const title = document.getElementById("categoryModalTitle");
+  const sub   = document.getElementById("categoryModalSub");
+  const body  = document.getElementById("categoryModalBody");
+  if (!modal || !body) return;
+
+  const rows = allProjects
+    .map(p => {
+      const contract = toNumber(p.totalPriceWithVat);
+      const received = toNumber(p.totals?.income);
+      return {
+        code: p.projectCode,
+        name: p.projectName,
+        currency: p.contractCurrency || "LAK",
+        contract,
+        received,
+        remaining: contract - received,
+      };
+    })
+    .filter(r => r.remaining !== 0)
+    .sort((a, b) => b.remaining - a.remaining);
+
+  const totalRemaining = rows.reduce((s, r) => s + r.remaining, 0);
+
+  title.textContent = "Remaining to Collect by Project";
+  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} with a balance · Total: ${formatDisplayNumber(totalRemaining)}`;
+
+  body.innerHTML = rows.length === 0
+    ? '<p style="color:var(--muted);font-size:13px;">Nothing outstanding — all projects are fully collected.</p>'
+    : `
+      <table class="cat-table">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th style="text-align:right">Contract</th>
+            <th style="text-align:right">Received</th>
+            <th style="text-align:right">Remaining</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
+              <td style="text-align:right">${formatMoney(r.contract, r.currency)}</td>
+              <td style="text-align:right">${formatMoney(r.received, r.currency)}</td>
+              <td style="text-align:right;font-weight:600;color:${r.remaining >= 0 ? 'var(--investment)' : 'var(--expense)'}">${formatMoney(r.remaining, r.currency)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+function bindClickableKpi(id, handler) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener("click", handler);
+  el.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      openIncomeModal();
+      handler();
     }
   });
 }
+
+bindClickableKpi("incomeCard", () => openTransactionTypeModal("income", "Total Income"));
+bindClickableKpi("investmentCard", () => openTransactionTypeModal("investment", "Total Investment"));
+bindClickableKpi("expenseCard", () => openTransactionTypeModal("expense", "Total Expense"));
+bindClickableKpi("profitCard", openProfitModal);
+bindClickableKpi("contractCard", openRemainingModal);
 
 
 // ── BILL POPUP ─────────────────────────────────────────────────
