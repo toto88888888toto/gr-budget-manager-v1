@@ -184,6 +184,25 @@ function getStatusLabel(value) {
   return s ? s.label : "Draft";
 }
 
+// ── ORDER PROGRESS STAGE ────────────────────────────────
+const ORDER_STAGES = [
+  { value: "deposit",    label: "Deposit Received (30%)", hint: "Client paid the initial deposit" },
+  { value: "production", label: "In Production",          hint: "Ordered and being manufactured at the factory" },
+  { value: "transit",    label: "In Transit to Laos",     hint: "Shipped, on the way" },
+  { value: "delivery",   label: "Out for Delivery",       hint: "Being delivered to the client" },
+  { value: "completed",  label: "Completed (70% Paid)",   hint: "Final payment received, order closed" },
+];
+
+function normalizeOrderStage(value) {
+  const v = String(value || "").toLowerCase().trim().replace(/[\s-]+/g, "_");
+  return ORDER_STAGES.find((s) => s.value === v) ? v : "";
+}
+
+function orderStageIndex(value) {
+  const v = normalizeOrderStage(value);
+  return v ? ORDER_STAGES.findIndex((s) => s.value === v) : -1;
+}
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -1455,6 +1474,57 @@ function fillProjectModal(project = null) {
   }
 
   renderProjectModalHistory(currentProject);
+  renderOrderStageStepper(currentProject);
+}
+
+// ── ORDER PROGRESS STEPPER ──────────────────────────────────────
+// 5-step tracker on the Project Detail card: Deposit -> Production ->
+// Transit -> Delivery -> Completed. Click a step to mark it reached.
+function renderOrderStageStepper(project) {
+  const wrap = document.getElementById("orderStageStepper");
+  if (!wrap) return;
+
+  const currentIndex = orderStageIndex(project.orderStage);
+
+  wrap.innerHTML = ORDER_STAGES.map((stage, i) => {
+    const state = i <= currentIndex ? "done" : i === currentIndex + 1 ? "next" : "upcoming";
+    return `
+      <button type="button" class="order-stage-step ${state}" data-stage="${stage.value}" data-project-id="${escapeHtml(project.id || "")}" title="${escapeHtml(stage.hint)}">
+        <span class="order-stage-circle">${i <= currentIndex ? "✓" : i + 1}</span>
+        <span class="order-stage-label">${escapeHtml(stage.label)}</span>
+      </button>
+    `;
+  }).join("");
+
+  wrap.querySelectorAll(".order-stage-step").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const projectId = btn.dataset.projectId;
+      const stage = btn.dataset.stage;
+      const clickedIndex = orderStageIndex(stage);
+      // Clicking the current active stage clears it back one step; otherwise jump to that stage.
+      const newStage = clickedIndex === currentIndex ? (clickedIndex > 0 ? ORDER_STAGES[clickedIndex - 1].value : "") : stage;
+      await updateProjectOrderStage(projectId, newStage);
+    });
+  });
+}
+
+async function updateProjectOrderStage(projectId, newStage) {
+  const project = allProjects.find((item) => item.id === projectId);
+  const prevStage = project?.orderStage || "";
+  if (project) project.orderStage = newStage;
+  renderOrderStageStepper(project || { id: projectId, orderStage: newStage });
+
+  try {
+    await fetchJSON(`/api/projects/${projectId}/order-stage`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderStage: newStage }),
+    });
+  } catch (error) {
+    showToast(error.message, "error");
+    if (project) project.orderStage = prevStage;
+    renderOrderStageStepper(project || { id: projectId, orderStage: prevStage });
+  }
 }
 
 function openProjectModal(project) {

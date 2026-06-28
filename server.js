@@ -365,6 +365,14 @@ function normalizeStatus(value) {
   return VALID_STATUSES.includes(v) ? v : 'draft';
 }
 
+// ── ORDER PROGRESS STAGE ────────────────────────────────
+const VALID_ORDER_STAGES = ['', 'deposit', 'production', 'transit', 'delivery', 'completed'];
+
+function normalizeOrderStage(value) {
+  const v = String(value || '').toLowerCase().trim().replace(/[\s-]+/g, '_');
+  return VALID_ORDER_STAGES.includes(v) ? v : '';
+}
+
 function publicPathFromFile(file) {
   if (!file) return '';
   if (file.fieldname === 'companyLogo') return `/uploads/logos/${file.filename}`;
@@ -465,7 +473,9 @@ const PROJECT_HEADERS = [
   'profit',
   'status',
   'createdAt',
-  'updatedAt'
+  'updatedAt',
+  'quotationPath',
+  'orderStage'
 ];
 
 const TRANSACTION_HEADERS = [
@@ -560,6 +570,7 @@ function rowToProject(row) {
     createdAt: toText(values[17]),
     updatedAt: toText(values[18]),
     quotationPath: toText(values[19]),
+    orderStage: normalizeOrderStage(values[20]),
     _rowNumber: row.number
   };
 }
@@ -623,7 +634,8 @@ function projectToRow(project) {
     normalizeStatus(project.status),
     toText(project.createdAt),
     toText(project.updatedAt),
-    toText(project.quotationPath || '')
+    toText(project.quotationPath || ''),
+    normalizeOrderStage(project.orderStage)
   ];
 }
 
@@ -771,6 +783,7 @@ function projectPayload(body, existing, req, projects, transactions, resolvedLog
     quotationPath: resolvedQuotationPath !== undefined ? resolvedQuotationPath : toText(existing?.quotationPath || ''),
     contractCurrency: toText(body.contractCurrency ?? existing?.contractCurrency ?? 'LAK').toUpperCase(),
     status: normalizeStatus(body.status ?? existing?.status ?? 'draft'),
+    orderStage: normalizeOrderStage(body.orderStage ?? existing?.orderStage ?? ''),
     totalPrice,
     vatPercent,
     totalWithVat,
@@ -1117,6 +1130,42 @@ app.patch('/api/projects/:id/status', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Cannot update status:', error);
     return sendError(res, 'Cannot update status');
+  }
+});
+
+// ── Order progress stage update (used by detail card stepper) ──
+app.patch('/api/projects/:id/order-stage', requireAuth, async (req, res) => {
+  try {
+    const newStage = normalizeOrderStage(req.body?.orderStage);
+
+    const result = await queueWrite(async () => {
+      const { workbook, projectSheet } = await openWorkbook();
+      const projects = readProjects(projectSheet);
+
+      const existing = projects.find((item) => item.id === req.params.id);
+      if (!existing) {
+        return { status: 404, body: { ok: false, error: 'Project not found' } };
+      }
+
+      const updated = {
+        ...existing,
+        orderStage: newStage,
+        updatedAt: new Date().toISOString()
+      };
+
+      const row = projectSheet.getRow(existing._rowNumber);
+      row.values = projectToRow(updated);
+      row.commit();
+
+      await saveWorkbook(workbook);
+
+      return { status: 200, body: { ok: true, orderStage: newStage } };
+    });
+
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error('Cannot update order stage:', error);
+    return sendError(res, 'Cannot update order stage');
   }
 });
 
