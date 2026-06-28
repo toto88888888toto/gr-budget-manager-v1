@@ -1294,6 +1294,9 @@ function getFilteredProjects() {
     items.sort((a, b) => toNumber(b.no) - toNumber(a.no));
   }
 
+  // Company Administration record always pinned first for quick access.
+  items.sort((a, b) => Number(isAdminProject(b)) - Number(isAdminProject(a)));
+
   return items;
 }
 
@@ -1322,8 +1325,11 @@ function renderProjectCard(item) {
     (s) => `<option value="${s.value}" ${s.value === status ? "selected" : ""}>${escapeHtml(s.label)}</option>`
   ).join("");
 
+  const isAdmin = isAdminProject(item);
+
   return `
-    <article class="project-card ${isActive ? "active" : ""}" data-project-id="${item.id}">
+    <article class="project-card ${isActive ? "active" : ""} ${isAdmin ? "project-card-admin" : ""}" data-project-id="${item.id}">
+      ${isAdmin ? '<div class="admin-card-flag">🏢 Company Administration — internal payments, not a client order</div>' : ""}
       <div class="project-head">
         ${getLogoCardHtml(item)}
         <div class="project-title-wrap">
@@ -1507,6 +1513,16 @@ function fillProjectModal(project = null) {
 
   const currency = currentProject.contractCurrency || "LAK";
   const profit = toNumber(currentProject.estimatedProfit);
+
+  const modalTitleEl = document.getElementById("projectModalTitle");
+  const modalSubEl = document.getElementById("projectModalSub");
+  if (isAdminProject(currentProject)) {
+    if (modalTitleEl) modalTitleEl.textContent = "Company Administration";
+    if (modalSubEl) modalSubEl.textContent = "Internal company payments — not a client order.";
+  } else {
+    if (modalTitleEl) modalTitleEl.textContent = "Project Detail";
+    if (modalSubEl) modalSubEl.textContent = "Project summary and transaction history.";
+  }
 
   showDetailLogo(currentProject.logoPath || "");
 
