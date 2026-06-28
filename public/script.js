@@ -558,61 +558,51 @@ function updateKPIs(projects) {
 }
 
 // ── ORDER PROGRESS SUMMARY ──────────────────────────────────────
-// Shows, per project, what the client has paid (30% deposit / 70%
-// final) and whether the order has been delivered yet.
+// Groups projects by their current order stage and lays the stages
+// out left to right, so you can see how many clients are at each
+// step and who they are.
 function buildOrderProgressSummary(projects) {
   const list = document.getElementById("orderProgressList");
   if (!list) return;
 
-  const rows = projects
-    .map((p) => ({
-      id: p.id,
-      code: p.projectCode,
-      name: p.projectName,
-      stageIndex: orderStageIndex(p.orderStage),
-      stageLabel: getOrderStageLabel(p.orderStage),
-    }))
-    .sort((a, b) => b.stageIndex - a.stageIndex);
-
-  if (rows.length === 0) {
+  if (projects.length === 0) {
     list.innerHTML = '<p style="color:var(--muted);font-size:13px;">No projects yet.</p>';
     return;
   }
 
+  const columns = [
+    { value: "", label: "Not Started" },
+    ...ORDER_STAGES,
+  ];
+
+  const groups = columns.map((stage) => ({
+    ...stage,
+    items: projects.filter((p) => normalizeOrderStage(p.orderStage) === stage.value),
+  }));
+
   list.innerHTML = `
-    <table class="cat-table">
-      <thead>
-        <tr>
-          <th>Project</th>
-          <th style="text-align:center">Deposit (30%)</th>
-          <th style="text-align:center">Delivered</th>
-          <th style="text-align:center">Final Payment (70%)</th>
-          <th>Current Stage</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map((r) => {
-          const depositPaid = r.stageIndex >= 0;
-          const delivered = r.stageIndex >= 3;
-          const finalPaid = r.stageIndex >= 4;
-          const pill = (ok) => ok
-            ? `<span class="op-pill yes">✓ Yes</span>`
-            : `<span class="op-pill no">— No</span>`;
-          return `
-            <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to view this project">
-              <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
-              <td style="text-align:center">${pill(depositPaid)}</td>
-              <td style="text-align:center">${pill(delivered)}</td>
-              <td style="text-align:center">${pill(finalPaid)}</td>
-              <td><span class="order-stage-pill stage-${normalizeOrderStage(r.stageIndex >= 0 ? ORDER_STAGES[r.stageIndex].value : "")}">${escapeHtml(r.stageLabel)}</span></td>
-            </tr>
-          `;
-        }).join("")}
-      </tbody>
-    </table>
+    <div class="order-progress-columns">
+      ${groups.map((g) => `
+        <div class="op-column">
+          <div class="op-column-header stage-${normalizeOrderStage(g.value) || "none"}">
+            <div class="op-column-title">${escapeHtml(g.label)}</div>
+            <div class="op-column-count">${g.items.length} client${g.items.length !== 1 ? "s" : ""}</div>
+          </div>
+          <div class="op-column-list">
+            ${g.items.length === 0
+              ? '<div class="op-empty">—</div>'
+              : g.items.map((p) => `
+                  <div class="op-client-row" data-project-id="${escapeHtml(p.id || "")}" title="Click to view this project">
+                    <span class="cat-proj-code">${escapeHtml(p.projectCode || "")}</span> ${escapeHtml(p.projectName || "")}
+                  </div>
+                `).join("")}
+          </div>
+        </div>
+      `).join("")}
+    </div>
   `;
 
-  list.querySelectorAll("tr.cat-row-clickable").forEach((row) => {
+  list.querySelectorAll(".op-client-row").forEach((row) => {
     row.addEventListener("click", () => {
       const project = allProjects.find((p) => p.id === row.dataset.projectId);
       if (project) openProjectModal(project);
