@@ -189,7 +189,7 @@ const ORDER_STAGES = [
   { value: "deposit",    label: "Deposit Received (30%)", hint: "Client paid the initial deposit" },
   { value: "production", label: "In Production",          hint: "Ordered and being manufactured at the factory" },
   { value: "transit",    label: "In Transit to Laos",     hint: "Shipped, on the way" },
-  { value: "delivery",   label: "Out for Delivery",       hint: "Being delivered to the client" },
+  { value: "delivery",   label: "Delivered to Client",    hint: "Order has been delivered to the client" },
   { value: "completed",  label: "Completed (70% Paid)",   hint: "Final payment received, order closed" },
 ];
 
