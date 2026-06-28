@@ -203,6 +203,13 @@ function orderStageIndex(value) {
   return v ? ORDER_STAGES.findIndex((s) => s.value === v) : -1;
 }
 
+function getOrderStageLabel(value) {
+  const v = normalizeOrderStage(value);
+  if (!v) return "Not Started";
+  const s = ORDER_STAGES.find((x) => x.value === v);
+  return s ? s.label : "Not Started";
+}
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -546,7 +553,71 @@ function updateKPIs(projects) {
   }
   buildCategoryBreakdown(projects);
   buildAdminExpenses(projects);
+  buildOrderProgressSummary(projects);
   buildRecentActivity(projects);
+}
+
+// ── ORDER PROGRESS SUMMARY ──────────────────────────────────────
+// Shows, per project, what the client has paid (30% deposit / 70%
+// final) and whether the order has been delivered yet.
+function buildOrderProgressSummary(projects) {
+  const list = document.getElementById("orderProgressList");
+  if (!list) return;
+
+  const rows = projects
+    .map((p) => ({
+      id: p.id,
+      code: p.projectCode,
+      name: p.projectName,
+      stageIndex: orderStageIndex(p.orderStage),
+      stageLabel: getOrderStageLabel(p.orderStage),
+    }))
+    .sort((a, b) => b.stageIndex - a.stageIndex);
+
+  if (rows.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;">No projects yet.</p>';
+    return;
+  }
+
+  list.innerHTML = `
+    <table class="cat-table">
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th style="text-align:center">Deposit (30%)</th>
+          <th style="text-align:center">Delivered</th>
+          <th style="text-align:center">Final Payment (70%)</th>
+          <th>Current Stage</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((r) => {
+          const depositPaid = r.stageIndex >= 0;
+          const delivered = r.stageIndex >= 3;
+          const finalPaid = r.stageIndex >= 4;
+          const pill = (ok) => ok
+            ? `<span class="op-pill yes">✓ Yes</span>`
+            : `<span class="op-pill no">— No</span>`;
+          return `
+            <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to view this project">
+              <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
+              <td style="text-align:center">${pill(depositPaid)}</td>
+              <td style="text-align:center">${pill(delivered)}</td>
+              <td style="text-align:center">${pill(finalPaid)}</td>
+              <td><span class="order-stage-pill stage-${normalizeOrderStage(r.stageIndex >= 0 ? ORDER_STAGES[r.stageIndex].value : "")}">${escapeHtml(r.stageLabel)}</span></td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+
+  list.querySelectorAll("tr.cat-row-clickable").forEach((row) => {
+    row.addEventListener("click", () => {
+      const project = allProjects.find((p) => p.id === row.dataset.projectId);
+      if (project) openProjectModal(project);
+    });
+  });
 }
 
 // ── RECENT ACTIVITY ─────────────────────────────────────────────
@@ -1264,6 +1335,7 @@ function renderProjectCard(item) {
             </select>
           </div>
           <h3 class="project-name">${escapeHtml(item.projectName || "")}</h3>
+          <span class="order-stage-pill stage-${normalizeOrderStage(item.orderStage) || "none"}">${escapeHtml(getOrderStageLabel(item.orderStage))}</span>
         </div>
       </div>
 
