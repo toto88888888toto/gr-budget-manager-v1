@@ -198,6 +198,13 @@ function normalizeOrderStage(value) {
   return ORDER_STAGES.find((s) => s.value === v) ? v : "";
 }
 
+// "Administrative expenses" is the internal company-overhead bucket
+// (rent, fees, etc.), not a client order, so the order pipeline
+// (deposit/production/delivery) doesn't apply to it.
+function isAdminProject(project) {
+  return String(project?.category || "").trim().toLowerCase() === "administrative expenses";
+}
+
 function orderStageIndex(value) {
   const v = normalizeOrderStage(value);
   return v ? ORDER_STAGES.findIndex((s) => s.value === v) : -1;
@@ -561,12 +568,14 @@ function updateKPIs(projects) {
 // Groups projects by their current order stage and lays the stages
 // out left to right, so you can see how many clients are at each
 // step and who they are.
-function buildOrderProgressSummary(projects) {
+function buildOrderProgressSummary(allProjectsList) {
   const list = document.getElementById("orderProgressList");
   if (!list) return;
 
+  const projects = allProjectsList.filter((p) => !isAdminProject(p));
+
   if (projects.length === 0) {
-    list.innerHTML = '<p style="color:var(--muted);font-size:13px;">No projects yet.</p>';
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;">No client orders yet.</p>';
     return;
   }
 
@@ -1325,7 +1334,7 @@ function renderProjectCard(item) {
             </select>
           </div>
           <h3 class="project-name">${escapeHtml(item.projectName || "")}</h3>
-          <span class="order-stage-pill stage-${normalizeOrderStage(item.orderStage) || "none"}">${escapeHtml(getOrderStageLabel(item.orderStage))}</span>
+          ${isAdminProject(item) ? "" : `<span class="order-stage-pill stage-${normalizeOrderStage(item.orderStage) || "none"}">${escapeHtml(getOrderStageLabel(item.orderStage))}</span>`}
         </div>
       </div>
 
@@ -1544,7 +1553,15 @@ function fillProjectModal(project = null) {
 // Transit -> Delivery -> Completed. Click a step to mark it reached.
 function renderOrderStageStepper(project) {
   const wrap = document.getElementById("orderStageStepper");
+  const panel = document.getElementById("orderStagePanel");
   if (!wrap) return;
+
+  if (isAdminProject(project)) {
+    if (panel) panel.classList.add("hidden");
+    wrap.innerHTML = "";
+    return;
+  }
+  if (panel) panel.classList.remove("hidden");
 
   const currentIndex = orderStageIndex(project.orderStage);
 
