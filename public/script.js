@@ -527,6 +527,66 @@ function updateKPIs(projects) {
   }
   buildCategoryBreakdown(projects);
   buildAdminExpenses(projects);
+  buildRecentActivity(projects);
+}
+
+// ── RECENT ACTIVITY ─────────────────────────────────────────────
+// Shows the last 5 transactions added/updated across all projects,
+// newest first, so it's easy to see what you just did.
+function buildRecentActivity(projects) {
+  const list = document.getElementById("recentActivityList");
+  if (!list) return;
+
+  const entries = [];
+  for (const project of projects) {
+    for (const tx of (project.transactions || [])) {
+      entries.push({
+        ...tx,
+        _projectId: project.id,
+        _projectName: project.projectName,
+        _projectCode: project.projectCode,
+      });
+    }
+  }
+
+  entries.sort((a, b) => {
+    const aTime = new Date(a.createdAt || a.date || 0).getTime();
+    const bTime = new Date(b.createdAt || b.date || 0).getTime();
+    return bTime - aTime;
+  });
+
+  const recent = entries.slice(0, 5);
+
+  if (recent.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;">No activity yet — add a transaction to a project to see it here.</p>';
+    return;
+  }
+
+  const typeLabel = { income: "Income", investment: "Investment", expense: "Expense" };
+  const typeClass = { income: "income", investment: "investment", expense: "expense" };
+
+  list.innerHTML = recent.map(tx => `
+    <div class="activity-row" data-project-id="${escapeHtml(tx._projectId || "")}">
+      <span class="activity-dot ${typeClass[tx.type] || ""}"></span>
+      <div class="activity-body">
+        <div class="activity-title">
+          <span class="cat-proj-code">${escapeHtml(tx._projectCode || "")}</span>
+          ${escapeHtml(tx._projectName || "")}
+          <span class="activity-type ${typeClass[tx.type] || ""}">${escapeHtml(typeLabel[tx.type] || tx.type || "")}</span>
+        </div>
+        <div class="activity-desc">${escapeHtml(tx.description || "No description")}</div>
+      </div>
+      <div class="activity-amount ${typeClass[tx.type] || ""}">${formatDisplayNumber(tx.amount)}</div>
+      <div class="activity-date">${escapeHtml(tx.date || "")}</div>
+    </div>
+  `).join("");
+
+  list.querySelectorAll(".activity-row").forEach(row => {
+    row.addEventListener("click", () => {
+      const project = allProjects.find(p => p.id === row.dataset.projectId);
+      if (project) openProjectModal(project);
+    });
+  });
 }
 
 // ── CATEGORY BREAKDOWN ─────────────────────────────────────────
