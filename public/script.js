@@ -898,17 +898,14 @@ function openProfitModal() {
       currency: p.contractCurrency || "LAK",
       income: toNumber(p.totals?.income),
       investment: toNumber(p.totals?.investment),
-      expense: toNumber(p.totals?.expense),
-      profit: toNumber(p.estimatedProfit),
-      profitInclInvestment: toNumber(p.estimatedProfitInclInvestment),
+      profit: projectProfit(p),
     }))
     .sort((a, b) => b.profit - a.profit);
 
   const totalProfit = rows.reduce((s, r) => s + r.profit, 0);
-  const totalProfitInclInvestment = rows.reduce((s, r) => s + r.profitInclInvestment, 0);
 
   title.textContent = "Total Profit by Project";
-  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} · Net Profit: ${formatDisplayNumber(totalProfit)} · incl. Investment: ${formatDisplayNumber(totalProfitInclInvestment)}`;
+  sub.textContent    = `${rows.length} project${rows.length !== 1 ? "s" : ""} · Profit (Income − Investment): ${formatDisplayNumber(totalProfit)}`;
 
   body.innerHTML = rows.length === 0
     ? '<p style="color:var(--muted);font-size:13px;">No projects yet.</p>'
@@ -918,9 +915,8 @@ function openProfitModal() {
           <tr>
             <th>Project</th>
             <th style="text-align:right">Income</th>
-            <th style="text-align:right">Expense</th>
-            <th style="text-align:right">Net Profit</th>
-            <th style="text-align:right">Incl. Investment</th>
+            <th style="text-align:right">Investment</th>
+            <th style="text-align:right">Profit</th>
             <th style="text-align:center">Action</th>
           </tr>
         </thead>
@@ -929,9 +925,8 @@ function openProfitModal() {
             <tr class="cat-row-clickable" data-project-id="${escapeHtml(r.id || "")}" title="Click to view this project">
               <td><span class="cat-proj-code">${escapeHtml(r.code || "")}</span> ${escapeHtml(r.name || "")}</td>
               <td style="text-align:right">${formatMoney(r.income, r.currency)}</td>
-              <td style="text-align:right">${formatMoney(r.expense, r.currency)}</td>
+              <td style="text-align:right">${formatMoney(r.investment, r.currency)}</td>
               <td style="text-align:right;font-weight:600;color:${r.profit >= 0 ? 'var(--success)' : 'var(--expense)'}">${formatMoney(r.profit, r.currency)}</td>
-              <td style="text-align:right;color:${r.profitInclInvestment >= 0 ? 'var(--success)' : 'var(--expense)'}">${formatMoney(r.profitInclInvestment, r.currency)}</td>
               <td style="text-align:center">
                 <button class="btn btn-sm btn-edit-row" type="button" data-project-id="${escapeHtml(r.id || "")}">Edit</button>
               </td>
@@ -1301,9 +1296,9 @@ function getFilteredProjects() {
       String(a.projectCode || "").localeCompare(String(b.projectCode || ""))
     );
   } else if (sortValue === "profitHigh") {
-    items.sort((a, b) => toNumber(b.estimatedProfit) - toNumber(a.estimatedProfit));
+    items.sort((a, b) => projectProfit(b) - projectProfit(a));
   } else if (sortValue === "profitLow") {
-    items.sort((a, b) => toNumber(a.estimatedProfit) - toNumber(b.estimatedProfit));
+    items.sort((a, b) => projectProfit(a) - projectProfit(b));
   } else {
     items.sort((a, b) => toNumber(b.no) - toNumber(a.no));
   }
@@ -1329,10 +1324,18 @@ function getProjectRemarkText(item) {
   return text || "No remark";
 }
 
+// Profit for a single project = Income − Investment. Single source of truth
+// used by the project card, the profit sort and the Total Profit modal so
+// every view agrees with the project detail modal.
+function projectProfit(project) {
+  return toNumber(project?.totals?.income) - toNumber(project?.totals?.investment);
+}
+
 function renderProjectCard(item) {
   const isActive = item.id === currentProjectId;
   const currency = item.contractCurrency || "LAK";
-  const profitClass = toNumber(item.estimatedProfit) >= 0 ? "profit-positive" : "profit-negative";
+  const profit = projectProfit(item);
+  const profitClass = profit >= 0 ? "profit-positive" : "profit-negative";
   const status = normalizeStatus(item.status);
 
   const statusOptions = PROJECT_STATUSES.map(
@@ -1382,7 +1385,7 @@ function renderProjectCard(item) {
 
         <div class="amount-box ${profitClass}">
           <div class="label">Profit</div>
-          <div class="amt">${formatMoney(item.estimatedProfit, currency)}</div>
+          <div class="amt">${formatMoney(profit, currency)}</div>
         </div>
       </div>
 
