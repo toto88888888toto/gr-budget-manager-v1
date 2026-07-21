@@ -145,12 +145,12 @@ const projectDetailLogo = $("projectDetailLogo");
 const detailTotalPrice = $("detailTotalPrice");
 const detailVatPercent = $("detailVatPercent");
 const detailTotalWithVat = $("detailTotalWithVat");
-const detailActualCost = $("detailActualCost");
-const detailEstimatedProfit = $("detailEstimatedProfit");
-const detailBalance = $("detailBalance");
+const detailRemaining = $("detailRemaining");
+const detailRemainingVat = $("detailRemainingVat");
+const detailRemainingVatBox = $("detailRemainingVatBox");
 const detailIncome = $("detailIncome");
 const detailInvestment = $("detailInvestment");
-const detailExpense = $("detailExpense");
+const detailProfit = $("detailProfit");
 
 // Tx modal
 const txModal = $("txModal");
@@ -1512,7 +1512,6 @@ function fillProjectModal(project = null) {
   if (!currentProject) return;
 
   const currency = currentProject.contractCurrency || "LAK";
-  const profit = toNumber(currentProject.estimatedProfit);
 
   const modalTitleEl = document.getElementById("projectModalTitle");
   const modalSubEl = document.getElementById("projectModalSub");
@@ -1544,20 +1543,33 @@ function fillProjectModal(project = null) {
   detailCurrency.textContent = currency;
   detailTransactionCount.textContent = String(toNumber(currentProject.transactionCount));
 
+  const income = toNumber(currentProject.totals?.income);
+  const investment = toNumber(currentProject.totals?.investment);
+  const vatPct = toNumber(currentProject.vatPercent);
+  const totalWithVat = toNumber(currentProject.totalPriceWithVat);
+
+  // What the client still owes on the full (VAT-inclusive) invoice, and the
+  // same outstanding amount expressed without VAT. For no-VAT projects the two
+  // are identical, so the "+ VAT" card is hidden below.
+  const remainingWithVat = totalWithVat - income;
+  const remainingBase = vatPct ? remainingWithVat / (1 + vatPct / 100) : remainingWithVat;
+  const profitValue = income - investment;
+
   detailTotalPrice.textContent = formatMoney(currentProject.totalPrice, currency);
   detailVatPercent.textContent = `${formatDisplayNumber(currentProject.vatPercent)}%`;
   detailTotalWithVat.textContent = formatMoney(currentProject.totalPriceWithVat, currency);
-  detailActualCost.textContent = formatMoney(currentProject.actualCost, currency);
-  detailEstimatedProfit.textContent = formatMoney(profit, currency);
-  detailBalance.textContent = formatMoney(currentProject.balance, currency);
 
-  detailIncome.textContent = formatDisplayNumber(currentProject.totals?.income);
-  detailInvestment.textContent = formatDisplayNumber(currentProject.totals?.investment);
-  detailExpense.textContent = formatDisplayNumber(currentProject.totals?.expense);
+  detailRemaining.textContent = formatMoney(remainingBase, currency);
+  detailRemainingVat.textContent = formatMoney(remainingWithVat, currency);
+  if (detailRemainingVatBox) detailRemainingVatBox.style.display = vatPct ? "" : "none";
 
-  if (detailEstimatedProfit) {
-    detailEstimatedProfit.classList.toggle("text-success", profit >= 0);
-    detailEstimatedProfit.classList.toggle("text-danger", profit < 0);
+  detailInvestment.textContent = formatDisplayNumber(investment);
+  detailIncome.textContent = formatDisplayNumber(income);
+  detailProfit.textContent = formatDisplayNumber(profitValue);
+
+  if (detailProfit) {
+    detailProfit.classList.toggle("text-success", profitValue >= 0);
+    detailProfit.classList.toggle("text-danger", profitValue < 0);
   }
 
   renderProjectModalHistory(currentProject);

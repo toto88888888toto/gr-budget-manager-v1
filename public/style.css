@@ -872,6 +872,7 @@ body.dark .status-on_hold {
   display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px;
 }
 .project-finance-grid.small-kpis { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.project-finance-grid.collect-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 
 .finance-box {
   background: var(--surface-2); border: 1px solid var(--border);
@@ -899,6 +900,10 @@ body.dark .status-on_hold {
 .finance-box.investment strong { color: var(--investment); }
 .finance-box.expense { background: var(--expense-bg); border-color: var(--expense-border); }
 .finance-box.expense strong { color: var(--expense); }
+.finance-box.collect { background: var(--accent-light); border-color: var(--accent-border); }
+.finance-box.collect strong { color: var(--accent); }
+.finance-box.profit { background: var(--success-bg); border-color: var(--success-border); }
+.finance-box.profit strong { color: var(--success); }
 
 /* ── HISTORY ─────────────────────────────────────── */
 .history-list { display: flex; flex-direction: column; gap: 12px; }
