@@ -163,6 +163,31 @@
         </div>
       </div>
 
+      <!-- ── COMPANY BUDGET ───────────────────────── -->
+      <div class="panel" id="companyBudgetPanel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Company Budget</div>
+            <div class="panel-sub">Cash on hand per currency, all converted to LAK</div>
+          </div>
+          <button class="btn btn-sm btn-primary" type="button" id="saveBudgetBtn">Save</button>
+        </div>
+        <div class="panel-body">
+          <div class="budget-total">
+            <span class="budget-total-label">Total Budget (LAK)</span>
+            <span class="budget-total-value" id="budgetTotalLak">₭0</span>
+          </div>
+          <div class="budget-table" id="budgetTable">
+            <div class="budget-row budget-head">
+              <span>Currency</span>
+              <span>Amount</span>
+              <span>Rate → LAK</span>
+              <span>Value in LAK</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── ORDER PROGRESS SUMMARY ───────────────── -->
       <div class="panel" id="orderProgressPanel">
         <div class="panel-header">
@@ -838,6 +863,105 @@
         if (card) card.classList.toggle('profit-negative', totals.profit < 0);
       }
     }
+  </script>
+
+  <script>
+    // ── COMPANY BUDGET ─────────────────────────────────────────
+    // Cash on hand per currency + an exchange rate to LAK. Total is the sum
+    // of every currency converted to LAK. Persisted via /api/budget.
+    (function () {
+      const CURRENCIES = ['LAK', 'THB', 'CNY', 'USD'];
+      const symOf = (c) => (typeof getCurrencySymbol === 'function' ? getCurrencySymbol(c) : '');
+      const lakSym = () => symOf('LAK') || '';
+      const parseNum = (v) => {
+        const n = parseFloat(String(v == null ? '' : v).replace(/,/g, ''));
+        return Number.isFinite(n) ? n : 0;
+      };
+      const fmt = (n) => (typeof formatDisplayNumber === 'function'
+        ? formatDisplayNumber(n)
+        : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n || 0));
+      const q = (sel) => document.querySelector(sel);
+
+      function buildRows() {
+        const table = document.getElementById('budgetTable');
+        if (!table) return;
+        CURRENCIES.forEach((cur) => {
+          const isLak = cur === 'LAK';
+          const row = document.createElement('div');
+          row.className = 'budget-row';
+          row.dataset.currency = cur;
+          row.innerHTML =
+            '<span class="budget-cur"><span class="budget-cur-sym">' + (symOf(cur) || '') + '</span> ' + cur + '</span>' +
+            '<input class="budget-input budget-amount" type="text" inputmode="decimal" data-currency="' + cur + '" placeholder="0" />' +
+            (isLak
+              ? '<input class="budget-input budget-rate" type="text" value="1" data-currency="' + cur + '" disabled />'
+              : '<input class="budget-input budget-rate" type="text" inputmode="decimal" data-currency="' + cur + '" placeholder="0" />') +
+            '<span class="budget-lak" data-currency="' + cur + '">' + lakSym() + '0</span>';
+          table.appendChild(row);
+        });
+        table.addEventListener('input', recalc);
+      }
+
+      function recalc() {
+        let total = 0;
+        CURRENCIES.forEach((cur) => {
+          const amount = parseNum((q('.budget-amount[data-currency="' + cur + '"]') || {}).value);
+          const rate = cur === 'LAK' ? 1 : parseNum((q('.budget-rate[data-currency="' + cur + '"]') || {}).value);
+          const lak = amount * rate;
+          const lakEl = q('.budget-lak[data-currency="' + cur + '"]');
+          if (lakEl) lakEl.textContent = lakSym() + fmt(lak);
+          total += lak;
+        });
+        const totalEl = document.getElementById('budgetTotalLak');
+        if (totalEl) totalEl.textContent = lakSym() + fmt(total);
+      }
+
+      async function loadBudget() {
+        if (typeof fetchJSON !== 'function') return;
+        try {
+          const data = await fetchJSON('/api/budget');
+          (Array.isArray(data) ? data : []).forEach((entry) => {
+            const cur = String(entry.currency || '').toUpperCase();
+            const amountEl = q('.budget-amount[data-currency="' + cur + '"]');
+            const rateEl = q('.budget-rate[data-currency="' + cur + '"]');
+            if (amountEl) amountEl.value = entry.amount ? fmt(entry.amount) : '';
+            if (rateEl && cur !== 'LAK') rateEl.value = entry.rate ? entry.rate : '';
+          });
+          recalc();
+        } catch (err) {
+          console.error('Cannot load budget', err);
+        }
+      }
+
+      async function saveBudget() {
+        const btn = document.getElementById('saveBudgetBtn');
+        const entries = CURRENCIES.map((cur) => ({
+          currency: cur,
+          amount: parseNum((q('.budget-amount[data-currency="' + cur + '"]') || {}).value),
+          rate: cur === 'LAK' ? 1 : parseNum((q('.budget-rate[data-currency="' + cur + '"]') || {}).value)
+        }));
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+        try {
+          await fetchJSON('/api/budget', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entries)
+          });
+          if (typeof showToast === 'function') showToast('Budget saved', 'success');
+        } catch (err) {
+          if (typeof showToast === 'function') showToast(err.message || 'Cannot save budget', 'error');
+        } finally {
+          if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        buildRows();
+        const btn = document.getElementById('saveBudgetBtn');
+        if (btn) btn.addEventListener('click', saveBudget);
+        loadBudget();
+      });
+    })();
   </script>
 
   <!-- Toast Notification -->

@@ -306,6 +306,56 @@ body.dark .theme-toggle .icon-sun { display: none; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
+/* ── COMPANY BUDGET ─────────────────────────────────── */
+.budget-total {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 16px 18px; margin-bottom: 18px;
+  background: var(--accent-light); border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+}
+.budget-total-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--muted);
+}
+.budget-total-value {
+  font-size: clamp(24px, 3vw, 34px); font-weight: 800;
+  letter-spacing: -0.02em; color: var(--accent);
+}
+.budget-table { display: flex; flex-direction: column; gap: 10px; }
+.budget-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr 1.4fr 1.4fr;
+  gap: 12px; align-items: center;
+}
+.budget-head {
+  font-size: 11px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 0 2px 2px;
+}
+.budget-head span:nth-child(n+2) { text-align: right; }
+.budget-cur {
+  font-weight: 700; font-size: 15px; color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+.budget-cur-sym { color: var(--muted); font-weight: 600; }
+.budget-input {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-2); color: var(--text);
+  font-size: 14px; font-weight: 600; text-align: right;
+}
+.budget-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+.budget-input:disabled { opacity: .5; cursor: not-allowed; }
+.budget-lak {
+  font-weight: 700; font-size: 15px; color: var(--text); text-align: right;
+}
+@media (max-width: 640px) {
+  .budget-head { display: none; }
+  .budget-row { grid-template-columns: 1fr 1fr; row-gap: 6px; }
+  .budget-row .budget-cur { grid-column: 1 / -1; }
+  .budget-lak { grid-column: 1 / -1; text-align: left; color: var(--accent); }
+}
+
 /* ── PANEL ─────────────────────────────────────────── */
 .panel {
   background: var(--surface);

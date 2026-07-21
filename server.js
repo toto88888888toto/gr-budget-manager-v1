@@ -493,22 +493,29 @@ const TRANSACTION_HEADERS = [
   'updatedAt'
 ];
 
+const BUDGET_SHEET = 'Budget';
+const BUDGET_HEADERS = ['currency', 'amount', 'rate'];
+const BUDGET_CURRENCIES = ['LAK', 'THB', 'CNY', 'USD'];
+
 let workbookCache = null;
 let projectSheetCache = null;
 let transactionSheetCache = null;
+let budgetSheetCache = null;
 
 function invalidateWorkbookCache() {
   workbookCache = null;
   projectSheetCache = null;
   transactionSheetCache = null;
+  budgetSheetCache = null;
 }
 
 async function openWorkbook() {
-  if (workbookCache && projectSheetCache && transactionSheetCache) {
+  if (workbookCache && projectSheetCache && transactionSheetCache && budgetSheetCache) {
     return {
       workbook: workbookCache,
       projectSheet: projectSheetCache,
-      transactionSheet: transactionSheetCache
+      transactionSheet: transactionSheetCache,
+      budgetSheet: budgetSheetCache
     };
   }
 
@@ -520,18 +527,22 @@ async function openWorkbook() {
 
   let projectSheet = workbook.getWorksheet(PROJECT_SHEET);
   let transactionSheet = workbook.getWorksheet(TRANSACTION_SHEET);
+  let budgetSheet = workbook.getWorksheet(BUDGET_SHEET);
 
   if (!projectSheet) projectSheet = workbook.addWorksheet(PROJECT_SHEET);
   if (!transactionSheet) transactionSheet = workbook.addWorksheet(TRANSACTION_SHEET);
+  if (!budgetSheet) budgetSheet = workbook.addWorksheet(BUDGET_SHEET);
 
   ensureHeaders(projectSheet, PROJECT_HEADERS);
   ensureHeaders(transactionSheet, TRANSACTION_HEADERS);
+  ensureHeaders(budgetSheet, BUDGET_HEADERS);
 
   workbookCache = workbook;
   projectSheetCache = projectSheet;
   transactionSheetCache = transactionSheet;
+  budgetSheetCache = budgetSheet;
 
-  return { workbook, projectSheet, transactionSheet };
+  return { workbook, projectSheet, transactionSheet, budgetSheet };
 }
 
 let writeQueue = Promise.resolve();
@@ -546,6 +557,72 @@ async function saveWorkbook(workbook) {
   await workbook.xlsx.writeFile(EXCEL_FILE);
   invalidateWorkbookCache();
   await uploadToDrive();
+}
+
+// ── COMPANY BUDGET ────────────────────────────────────────────
+// One row per currency (LAK, THB, CNY, USD) holding the amount the
+// company currently has and the exchange rate used to convert it to LAK.
+// LAK's rate is always 1.
+async function readBudget() {
+  const { budgetSheet } = await openWorkbook();
+  const map = {};
+
+  budgetSheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return; // header
+    const currency = toText(row.values[1]).toUpperCase();
+    if (!currency) return;
+    map[currency] = {
+      currency,
+      amount: toNumber(row.values[2]),
+      rate: toNumber(row.values[3])
+    };
+  });
+
+  return BUDGET_CURRENCIES.map((currency) => {
+    const stored = map[currency];
+    return {
+      currency,
+      amount: stored ? stored.amount : 0,
+      rate: currency === 'LAK' ? 1 : (stored ? stored.rate : 0)
+    };
+  });
+}
+
+async function writeBudget(entries) {
+  const byCurrency = {};
+  (Array.isArray(entries) ? entries : []).forEach((entry) => {
+    const currency = String(entry?.currency || '').toUpperCase();
+    if (BUDGET_CURRENCIES.includes(currency)) byCurrency[currency] = entry;
+  });
+
+  const normalized = BUDGET_CURRENCIES.map((currency) => {
+    const entry = byCurrency[currency] || {};
+    return {
+      currency,
+      amount: toNumber(entry.amount),
+      rate: currency === 'LAK' ? 1 : toNumber(entry.rate)
+    };
+  });
+
+  await queueWrite(async () => {
+    const { workbook, budgetSheet } = await openWorkbook();
+    // Write each currency to a fixed row (2..5) so repeated saves overwrite
+    // in place instead of appending duplicates.
+    normalized.forEach((entry, i) => {
+      const row = budgetSheet.getRow(i + 2);
+      row.values = [entry.currency, entry.amount, entry.rate];
+      row.commit();
+    });
+    // Trim any leftover rows left by older writes.
+    let guard = 0;
+    while (budgetSheet.rowCount > BUDGET_CURRENCIES.length + 1 && guard < 50) {
+      budgetSheet.spliceRows(BUDGET_CURRENCIES.length + 2, 1);
+      guard += 1;
+    }
+    await saveWorkbook(workbook);
+  });
+
+  return normalized;
 }
 
 function rowToProject(row) {
@@ -996,6 +1073,27 @@ app.get('/api/projects/:id', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Cannot read project:', error);
     return sendError(res, 'Cannot read project');
+  }
+});
+
+app.get('/api/budget', requireAuth, async (req, res) => {
+  try {
+    const budget = await readBudget();
+    return res.json(budget);
+  } catch (error) {
+    console.error('Cannot read budget:', error);
+    return sendError(res, 'Cannot read budget');
+  }
+});
+
+app.put('/api/budget', requireAuth, async (req, res) => {
+  try {
+    const entries = Array.isArray(req.body) ? req.body : (req.body?.entries || []);
+    const budget = await writeBudget(entries);
+    return res.json(budget);
+  } catch (error) {
+    console.error('Cannot save budget:', error);
+    return sendError(res, 'Cannot save budget');
   }
 });
 
