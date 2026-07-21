@@ -55,14 +55,24 @@
             <span class="summary-value" id="kpiProjects">0</span>
           </div>
         </div>
-        <div class="summary-item s-income clickable-kpi" id="incomeCard" title="Click to see all income transactions" role="button" tabindex="0">
-          <span class="summary-icon">💰</span>
+        <div class="summary-item s-contract clickable-kpi" id="contractCard" title="Click to see remaining balance per project" role="button" tabindex="0">
+          <span class="summary-icon">🧾</span>
           <div class="summary-body">
             <span class="summary-label">
-              Total Income
-              <span class="view-badge">VIEW ▸</span>
+              Total Remaining to Collect
+              <span class="contract-badge">LEFT</span>
             </span>
-            <span class="summary-value" id="kpiIncome">0</span>
+            <span class="summary-value" id="kpiRemaining">0</span>
+          </div>
+        </div>
+        <div class="summary-item s-contract">
+          <span class="summary-icon">🧾</span>
+          <div class="summary-body">
+            <span class="summary-label">
+              Total Remaining to Collect + VAT
+              <span class="contract-badge">+VAT</span>
+            </span>
+            <span class="summary-value" id="kpiRemainingVat">0</span>
           </div>
         </div>
         <div class="summary-item s-investment clickable-kpi" id="investmentCard" title="Click to see all investment transactions" role="button" tabindex="0">
@@ -75,14 +85,14 @@
             <span class="summary-value" id="kpiInvestment">0</span>
           </div>
         </div>
-        <div class="summary-item s-expense clickable-kpi" id="expenseCard" title="Click to see all expense transactions" role="button" tabindex="0">
-          <span class="summary-icon">💸</span>
+        <div class="summary-item s-income clickable-kpi" id="incomeCard" title="Click to see all income transactions" role="button" tabindex="0">
+          <span class="summary-icon">💰</span>
           <div class="summary-body">
             <span class="summary-label">
-              Total Expense
-              <span class="view-badge expense">VIEW ▸</span>
+              Total Income
+              <span class="view-badge">VIEW ▸</span>
             </span>
-            <span class="summary-value" id="kpiExpense">0</span>
+            <span class="summary-value" id="kpiIncome">0</span>
           </div>
         </div>
         <div class="summary-item s-profit clickable-kpi" id="profitCard" title="Click to see profit per project" role="button" tabindex="0">
@@ -93,19 +103,6 @@
               <span class="profit-badge">NET</span>
             </span>
             <span class="summary-value" id="kpiProfit">0</span>
-            <span class="summary-sub" id="kpiProfitSub"></span>
-          </div>
-        </div>
-
-        <div class="summary-item s-contract clickable-kpi" id="contractCard" title="Click to see remaining balance per project" role="button" tabindex="0">
-          <span class="summary-icon">🧾</span>
-          <div class="summary-body">
-            <span class="summary-label">
-              Remaining to Collect
-              <span class="contract-badge">LEFT</span>
-            </span>
-            <span class="summary-value" id="kpiContractValue">0</span>
-            <span class="summary-sub" id="kpiContractSub"></span>
           </div>
         </div>
       </div>
@@ -120,11 +117,24 @@
             <span class="summary-value" id="kpiProjectsActive">0</span>
           </div>
         </div>
-        <div class="summary-item s-income">
-          <span class="summary-icon">💰</span>
+        <div class="summary-item s-contract">
+          <span class="summary-icon">🧾</span>
           <div class="summary-body">
-            <span class="summary-label">Total Income</span>
-            <span class="summary-value" id="kpiIncomeActive">0</span>
+            <span class="summary-label">
+              Total Remaining to Collect
+              <span class="contract-badge">LEFT</span>
+            </span>
+            <span class="summary-value" id="kpiRemainingActive">0</span>
+          </div>
+        </div>
+        <div class="summary-item s-contract">
+          <span class="summary-icon">🧾</span>
+          <div class="summary-body">
+            <span class="summary-label">
+              Total Remaining to Collect + VAT
+              <span class="contract-badge">+VAT</span>
+            </span>
+            <span class="summary-value" id="kpiRemainingVatActive">0</span>
           </div>
         </div>
         <div class="summary-item s-investment">
@@ -134,11 +144,11 @@
             <span class="summary-value" id="kpiInvestmentActive">0</span>
           </div>
         </div>
-        <div class="summary-item s-expense">
-          <span class="summary-icon">💸</span>
+        <div class="summary-item s-income">
+          <span class="summary-icon">💰</span>
           <div class="summary-body">
-            <span class="summary-label">Total Expense</span>
-            <span class="summary-value" id="kpiExpenseActive">0</span>
+            <span class="summary-label">Total Income</span>
+            <span class="summary-value" id="kpiIncomeActive">0</span>
           </div>
         </div>
         <div class="summary-item s-profit">
@@ -149,19 +159,6 @@
               <span class="profit-badge">NET</span>
             </span>
             <span class="summary-value" id="kpiProfitActive">0</span>
-            <span class="summary-sub" id="kpiProfitSubActive"></span>
-          </div>
-        </div>
-
-        <div class="summary-item s-contract">
-          <span class="summary-icon">🧾</span>
-          <div class="summary-body">
-            <span class="summary-label">
-              Remaining to Collect
-              <span class="contract-badge">LEFT</span>
-            </span>
-            <span class="summary-value" id="kpiContractValueActive">0</span>
-            <span class="summary-sub" id="kpiContractSubActive"></span>
           </div>
         </div>
       </div>
@@ -804,112 +801,42 @@
   <script src="/script.js?v=20260427"></script>
 
   <script>
-    // Patch updateKPIs to also update Contract Value (total price + VAT across all projects)
+    // Patch updateKPIs so the "Active Projects Only" bar is refreshed too.
+    // (The "Main (Total)" bar is fully handled inside updateKPIs in script.js.)
     const _origUpdateKPIs = window.updateKPIs;
     if (typeof updateKPIs === 'function') {
       window.updateKPIs = function(projects) {
         _origUpdateKPIs(projects);
-        updateContractKPI(projects);
         updateActiveKPIs(projects);
       };
     }
 
-    function updateContractKPI(projects) {
-      const el = document.getElementById('kpiContractValue');
-      const subEl = document.getElementById('kpiContractSub');
-      const card = el ? el.closest('.summary-item') : null;
-      if (!el || !Array.isArray(projects)) return;
-
-      const fmt = (n) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n);
-
-      let totalContract = 0;
-      let totalIncome = 0;
-
-      projects
-        .filter(p => String(p.status || '').toLowerCase().trim().replace(/[\s-]+/g, '_') === 'active')
-        .forEach(p => {
-          const price = parseFloat(String(p.totalPrice || 0).replace(/,/g, '')) || 0;
-          const vat = parseFloat(String(p.vatPercent || 0).replace(/,/g, '')) || 0;
-          totalContract += price + (price * vat / 100);
-
-          const txs = Array.isArray(p.transactions) ? p.transactions : [];
-          txs.forEach(tx => {
-            if (tx.type === 'income') {
-              totalIncome += parseFloat(String(tx.amount || 0).replace(/,/g, '')) || 0;
-            }
-          });
-        });
-
-      // Also read from the KPI if transactions not embedded
-      if (totalIncome === 0) {
-        const incomeEl = document.getElementById('kpiIncome');
-        if (incomeEl) totalIncome = parseFloat(String(incomeEl.textContent).replace(/,/g, '')) || 0;
-      }
-
-      const remaining = totalContract - totalIncome;
-      el.textContent = fmt(Math.abs(remaining));
-
-      if (subEl) {
-        subEl.textContent = `Contract: ${fmt(totalContract)} − Received: ${fmt(totalIncome)}`;
-      }
-
-      // Color: green if still owed money, red if over-collected
-      if (card) {
-        card.classList.toggle('contract-overcollected', remaining < 0);
-      }
-    }
-
-    // Also hook via MutationObserver on kpiProjects as a fallback trigger
-    const contractObs = new MutationObserver(() => {
-      if (typeof allProjects !== 'undefined') updateContractKPI(allProjects);
-    });
-    window.addEventListener('DOMContentLoaded', () => {
-      const el = document.getElementById('kpiProjects');
-      if (el) contractObs.observe(el, { childList: true, characterData: true, subtree: true });
-    });
-
-    // Duplicate summary bar filtered to status === "active" projects only.
+    // "Active Projects Only" summary bar: same six metrics as the main bar,
+    // but limited to projects whose status is "active". Reuses computeKpiTotals
+    // from script.js so the maths stays identical to the main bar.
     function updateActiveKPIs(projects) {
       if (!Array.isArray(projects)) return;
 
-      const fmt = (n) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(n);
       const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
 
       const active = projects.filter(
         p => String(p.status || '').toLowerCase().trim().replace(/[\s-]+/g, '_') === 'active'
       );
 
-      const totals = active.reduce((sum, p) => {
-        sum.income += Number(p.totals?.income) || 0;
-        sum.investment += Number(p.totals?.investment) || 0;
-        sum.expense += Number(p.totals?.expense) || 0;
-        sum.profit += Number(p.estimatedProfit) || 0;
-        sum.profitInclInvestment += Number(p.estimatedProfitInclInvestment) || 0;
-        sum.contract += Number(p.totalPriceWithVat) || 0;
-        return sum;
-      }, { income: 0, investment: 0, expense: 0, profit: 0, profitInclInvestment: 0, contract: 0 });
+      const totals = computeKpiTotals(active);
 
       set('kpiProjectsActive', String(active.length));
-      set('kpiIncomeActive', fmt(totals.income));
-      set('kpiInvestmentActive', fmt(totals.investment));
-      set('kpiExpenseActive', fmt(totals.expense));
+      set('kpiRemainingActive', formatDisplayNumber(totals.remaining));
+      set('kpiRemainingVatActive', formatDisplayNumber(totals.remainingVat));
+      set('kpiInvestmentActive', formatDisplayNumber(totals.investment));
+      set('kpiIncomeActive', formatDisplayNumber(totals.income));
 
       const profitEl = document.getElementById('kpiProfitActive');
       if (profitEl) {
-        profitEl.textContent = fmt(totals.profit);
+        profitEl.textContent = formatDisplayNumber(totals.profit);
         const card = profitEl.closest('.summary-item');
         if (card) card.classList.toggle('profit-negative', totals.profit < 0);
       }
-      set('kpiProfitSubActive', `incl. Investment: ${fmt(totals.profitInclInvestment)}`);
-
-      const remaining = totals.contract - totals.income;
-      const contractEl = document.getElementById('kpiContractValueActive');
-      if (contractEl) {
-        contractEl.textContent = fmt(Math.abs(remaining));
-        const card = contractEl.closest('.summary-item');
-        if (card) card.classList.toggle('contract-overcollected', remaining < 0);
-      }
-      set('kpiContractSubActive', `Contract: ${fmt(totals.contract)} − Received: ${fmt(totals.income)}`);
     }
   </script>
 

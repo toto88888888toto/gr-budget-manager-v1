@@ -111,7 +111,8 @@ const sortBy = $("sortBy");
 const kpiProjects = $("kpiProjects");
 const kpiIncome = $("kpiIncome");
 const kpiInvestment = $("kpiInvestment");
-const kpiExpense = $("kpiExpense");
+const kpiRemaining = $("kpiRemaining");
+const kpiRemainingVat = $("kpiRemainingVat");
 const kpiProfit = $("kpiProfit");
 
 // Datalists
@@ -533,30 +534,43 @@ function normalizeProject(project) {
   };
 }
 
-function updateKPIs(projects) {
-  const total = projects.reduce(
+// Sum the KPI metrics across a set of projects. Remaining-to-collect is only
+// counted for projects that have a contract value (client orders), and is the
+// outstanding amount with and without VAT so it matches the project-detail card.
+function computeKpiTotals(projects) {
+  return projects.reduce(
     (sum, project) => {
-      sum.income += toNumber(project.totals?.income);
-      sum.investment += toNumber(project.totals?.investment);
-      sum.expense += toNumber(project.totals?.expense);
-      sum.profit += toNumber(project.estimatedProfit);
-      sum.profitInclInvestment += toNumber(project.estimatedProfitInclInvestment);
+      const income = toNumber(project.totals?.income);
+      const investment = toNumber(project.totals?.investment);
+      const totalWithVat = toNumber(project.totalPriceWithVat);
+      const vat = toNumber(project.vatPercent);
+
+      sum.income += income;
+      sum.investment += investment;
+      sum.profit += income - investment;
+
+      if (totalWithVat > 0) {
+        const remWithVat = totalWithVat - income;
+        sum.remainingVat += remWithVat;
+        sum.remaining += vat ? remWithVat / (1 + vat / 100) : remWithVat;
+      }
       return sum;
     },
-    { income: 0, investment: 0, expense: 0, profit: 0, profitInclInvestment: 0 }
+    { income: 0, investment: 0, profit: 0, remaining: 0, remainingVat: 0 }
   );
+}
+
+function updateKPIs(projects) {
+  const total = computeKpiTotals(projects);
 
   kpiProjects.textContent = String(projects.length);
   kpiIncome.textContent = formatDisplayNumber(total.income);
   kpiInvestment.textContent = formatDisplayNumber(total.investment);
-  kpiExpense.textContent = formatDisplayNumber(total.expense);
+  if (kpiRemaining) kpiRemaining.textContent = formatDisplayNumber(total.remaining);
+  if (kpiRemainingVat) kpiRemainingVat.textContent = formatDisplayNumber(total.remainingVat);
   if (kpiProfit) {
     kpiProfit.textContent = formatDisplayNumber(total.profit);
     kpiProfit.style.color = total.profit >= 0 ? "" : "#dc2626";
-  }
-  const kpiProfitSub = document.getElementById("kpiProfitSub");
-  if (kpiProfitSub) {
-    kpiProfitSub.textContent = `incl. Investment: ${formatDisplayNumber(total.profitInclInvestment)}`;
   }
   buildCategoryBreakdown(projects);
   buildAdminExpenses(projects);
