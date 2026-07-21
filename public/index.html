@@ -46,6 +46,31 @@
   <main class="page">
     <div class="container">
 
+      <!-- ── COMPANY BUDGET ───────────────────────── -->
+      <div class="panel" id="companyBudgetPanel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Company Budget</div>
+            <div class="panel-sub">Cash on hand per currency, all converted to LAK</div>
+          </div>
+          <button class="btn btn-sm btn-primary" type="button" id="saveBudgetBtn">Save</button>
+        </div>
+        <div class="panel-body">
+          <div class="budget-total">
+            <span class="budget-total-label">Total Budget (LAK)</span>
+            <span class="budget-total-value" id="budgetTotalLak">₭0</span>
+          </div>
+          <div class="budget-table" id="budgetTable">
+            <div class="budget-row budget-head">
+              <span>Currency</span>
+              <span>Amount</span>
+              <span>Rate → LAK</span>
+              <span>Value in LAK</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── SUMMARY BAR ───────────────────────────── -->
       <div class="summary-bar">
         <div class="summary-item s-projects">
@@ -159,31 +184,6 @@
               <span class="profit-badge">NET</span>
             </span>
             <span class="summary-value" id="kpiProfitActive">0</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── COMPANY BUDGET ───────────────────────── -->
-      <div class="panel" id="companyBudgetPanel">
-        <div class="panel-header">
-          <div>
-            <div class="panel-title">Company Budget</div>
-            <div class="panel-sub">Cash on hand per currency, all converted to LAK</div>
-          </div>
-          <button class="btn btn-sm btn-primary" type="button" id="saveBudgetBtn">Save</button>
-        </div>
-        <div class="panel-body">
-          <div class="budget-total">
-            <span class="budget-total-label">Total Budget (LAK)</span>
-            <span class="budget-total-value" id="budgetTotalLak">₭0</span>
-          </div>
-          <div class="budget-table" id="budgetTable">
-            <div class="budget-row budget-head">
-              <span>Currency</span>
-              <span>Amount</span>
-              <span>Rate → LAK</span>
-              <span>Value in LAK</span>
-            </div>
           </div>
         </div>
       </div>
@@ -882,6 +882,29 @@
         : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n || 0));
       const q = (sel) => document.querySelector(sel);
 
+      // Insert thousands separators into a raw numeric string, keeping one dot.
+      const commafy = (str) => {
+        let cleaned = String(str == null ? '' : str).replace(/[^0-9.]/g, '');
+        const dot = cleaned.indexOf('.');
+        if (dot !== -1) cleaned = cleaned.slice(0, dot + 1) + cleaned.slice(dot + 1).replace(/\./g, '');
+        let [i, d] = cleaned.split('.');
+        i = (i || '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return d !== undefined ? i + '.' + d : i;
+      };
+      // Reformat an input's value with commas while keeping the caret sensible.
+      const formatInputCommas = (el) => {
+        if (!el) return;
+        const before = el.value.slice(0, el.selectionStart || 0).replace(/[^0-9]/g, '').length;
+        const formatted = commafy(el.value);
+        el.value = formatted;
+        let pos = 0, seen = 0;
+        while (pos < formatted.length && seen < before) {
+          if (/[0-9]/.test(formatted[pos])) seen += 1;
+          pos += 1;
+        }
+        try { el.setSelectionRange(pos, pos); } catch (e) {}
+      };
+
       function buildRows() {
         const table = document.getElementById('budgetTable');
         if (!table) return;
@@ -899,7 +922,14 @@
             '<span class="budget-lak" data-currency="' + cur + '">' + lakSym() + '0</span>';
           table.appendChild(row);
         });
-        table.addEventListener('input', recalc);
+        table.addEventListener('input', (e) => {
+          const t = e.target;
+          if (t && t.classList && !t.disabled &&
+              (t.classList.contains('budget-amount') || t.classList.contains('budget-rate'))) {
+            formatInputCommas(t);
+          }
+          recalc();
+        });
       }
 
       function recalc() {
@@ -925,7 +955,7 @@
             const amountEl = q('.budget-amount[data-currency="' + cur + '"]');
             const rateEl = q('.budget-rate[data-currency="' + cur + '"]');
             if (amountEl) amountEl.value = entry.amount ? fmt(entry.amount) : '';
-            if (rateEl && cur !== 'LAK') rateEl.value = entry.rate ? entry.rate : '';
+            if (rateEl && cur !== 'LAK') rateEl.value = entry.rate ? commafy(String(entry.rate)) : '';
           });
           recalc();
         } catch (err) {
