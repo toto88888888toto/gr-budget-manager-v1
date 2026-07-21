@@ -110,6 +110,62 @@
         </div>
       </div>
 
+      <!-- ── ACTIVE PROJECTS SUMMARY BAR ──────────────── -->
+      <div class="summary-bar-heading">🟢 Active Projects Only</div>
+      <div class="summary-bar summary-bar-active">
+        <div class="summary-item s-projects">
+          <span class="summary-icon">📁</span>
+          <div class="summary-body">
+            <span class="summary-label">Active Projects</span>
+            <span class="summary-value" id="kpiProjectsActive">0</span>
+          </div>
+        </div>
+        <div class="summary-item s-income">
+          <span class="summary-icon">💰</span>
+          <div class="summary-body">
+            <span class="summary-label">Total Income</span>
+            <span class="summary-value" id="kpiIncomeActive">0</span>
+          </div>
+        </div>
+        <div class="summary-item s-investment">
+          <span class="summary-icon">📊</span>
+          <div class="summary-body">
+            <span class="summary-label">Total Investment</span>
+            <span class="summary-value" id="kpiInvestmentActive">0</span>
+          </div>
+        </div>
+        <div class="summary-item s-expense">
+          <span class="summary-icon">💸</span>
+          <div class="summary-body">
+            <span class="summary-label">Total Expense</span>
+            <span class="summary-value" id="kpiExpenseActive">0</span>
+          </div>
+        </div>
+        <div class="summary-item s-profit">
+          <span class="summary-icon">📈</span>
+          <div class="summary-body">
+            <span class="summary-label">
+              Total Profit
+              <span class="profit-badge">NET</span>
+            </span>
+            <span class="summary-value" id="kpiProfitActive">0</span>
+            <span class="summary-sub" id="kpiProfitSubActive"></span>
+          </div>
+        </div>
+
+        <div class="summary-item s-contract">
+          <span class="summary-icon">🧾</span>
+          <div class="summary-body">
+            <span class="summary-label">
+              Remaining to Collect
+              <span class="contract-badge">LEFT</span>
+            </span>
+            <span class="summary-value" id="kpiContractValueActive">0</span>
+            <span class="summary-sub" id="kpiContractSubActive"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- ── ORDER PROGRESS SUMMARY ───────────────── -->
       <div class="panel" id="orderProgressPanel">
         <div class="panel-header">
@@ -755,6 +811,7 @@
       window.updateKPIs = function(projects) {
         _origUpdateKPIs(projects);
         updateContractKPI(projects);
+        updateActiveKPIs(projects);
       };
     }
 
@@ -811,6 +868,50 @@
       const el = document.getElementById('kpiProjects');
       if (el) contractObs.observe(el, { childList: true, characterData: true, subtree: true });
     });
+
+    // Duplicate summary bar filtered to status === "active" projects only.
+    function updateActiveKPIs(projects) {
+      if (!Array.isArray(projects)) return;
+
+      const fmt = (n) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(n);
+      const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+
+      const active = projects.filter(
+        p => String(p.status || '').toLowerCase().trim().replace(/[\s-]+/g, '_') === 'active'
+      );
+
+      const totals = active.reduce((sum, p) => {
+        sum.income += Number(p.totals?.income) || 0;
+        sum.investment += Number(p.totals?.investment) || 0;
+        sum.expense += Number(p.totals?.expense) || 0;
+        sum.profit += Number(p.estimatedProfit) || 0;
+        sum.profitInclInvestment += Number(p.estimatedProfitInclInvestment) || 0;
+        sum.contract += Number(p.totalPriceWithVat) || 0;
+        return sum;
+      }, { income: 0, investment: 0, expense: 0, profit: 0, profitInclInvestment: 0, contract: 0 });
+
+      set('kpiProjectsActive', String(active.length));
+      set('kpiIncomeActive', fmt(totals.income));
+      set('kpiInvestmentActive', fmt(totals.investment));
+      set('kpiExpenseActive', fmt(totals.expense));
+
+      const profitEl = document.getElementById('kpiProfitActive');
+      if (profitEl) {
+        profitEl.textContent = fmt(totals.profit);
+        const card = profitEl.closest('.summary-item');
+        if (card) card.classList.toggle('profit-negative', totals.profit < 0);
+      }
+      set('kpiProfitSubActive', `incl. Investment: ${fmt(totals.profitInclInvestment)}`);
+
+      const remaining = totals.contract - totals.income;
+      const contractEl = document.getElementById('kpiContractValueActive');
+      if (contractEl) {
+        contractEl.textContent = fmt(Math.abs(remaining));
+        const card = contractEl.closest('.summary-item');
+        if (card) card.classList.toggle('contract-overcollected', remaining < 0);
+      }
+      set('kpiContractSubActive', `Contract: ${fmt(totals.contract)} − Received: ${fmt(totals.income)}`);
+    }
   </script>
 
   <!-- Toast Notification -->
